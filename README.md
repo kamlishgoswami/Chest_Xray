@@ -2,7 +2,7 @@
 
 A comprehensive deep learning framework for robust detection of **Normal**, **Pneumonia**, **COVID-19**, and **Tuberculosis** from chest X-ray images. This framework implements state-of-the-art preprocessing techniques, transfer learning with pretrained CNNs and Vision Transformers, and comprehensive evaluation metrics.
 
-## 🌟 Features
+## Features
 
 ### Preprocessing Pipeline
 - **Image Resizing**: All images resized to 224×224 for compatibility with pretrained CNN and ViT models
@@ -86,7 +86,7 @@ Chest_Xray/
 └── README.md                         # This file
 ```
 
-## 🚀 Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -99,7 +99,7 @@ cd Chest_Xray
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
+## Usage
 
 ### Quick Start
 
@@ -202,7 +202,7 @@ model = vit.get_model()
 vit.compile_model(optimizer='adam', learning_rate=0.001)
 ```
 
-## 📊 Data Format
+## Data Format
 
 The framework expects data organized in the following structure:
 
@@ -223,7 +223,7 @@ data/raw/
     └── ...
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 All configuration settings are centralized in `configs/config.py`:
 
@@ -234,7 +234,7 @@ All configuration settings are centralized in `configs/config.py`:
 - **Training Configuration**: Epochs, batch size, learning rate, callbacks
 - **Evaluation Configuration**: Metrics, visualization settings
 
-## 🔬 Technical Details
+## Technical Details
 
 ### CLAHE (Contrast Limited Adaptive Histogram Equalization)
 - **Tile-based histogram equalization**: Divides image into tiles and applies histogram equalization
@@ -253,7 +253,7 @@ All configuration settings are centralized in `configs/config.py`:
 - **Oversampling**: Augmentation-based oversampling of minority classes
 - **Stratified splitting**: Maintains class distribution across train/val/test sets
 
-## 📈 Results and Visualization
+## Results and Visualization
 
 The framework automatically generates:
 - Confusion matrices (normalized and raw)
@@ -262,7 +262,7 @@ The framework automatically generates:
 - Per-class performance metrics
 - Class distribution visualizations
 
-## 🔗 References
+## References
 
 ### Super-Resolution Techniques
 - **SRCNN**: Image Super-Resolution Using Deep Convolutional Networks (IEEE Conference)
@@ -276,15 +276,15 @@ The framework automatically generates:
 - Huang et al., "Densely Connected Convolutional Networks", CVPR 2017
 - Tan & Le, "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks", ICML 2019
 
-## 📝 License
+## License
 
 This project is available for academic and research purposes.
 
-## 👥 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📧 Contact
+## Contact
 
 For questions or feedback, please open an issue on GitHub.
 
