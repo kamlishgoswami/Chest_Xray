@@ -35,6 +35,7 @@ class DenoisingAutoencoder:
         self.input_shape = input_shape
         self.latent_dim = latent_dim
         self.noise_factor = noise_factor
+        self.downsampling_factor = 8  # 2^3 from three MaxPooling2D layers
         self.model = None
         self.encoder = None
         self.decoder = None
@@ -63,7 +64,11 @@ class DenoisingAutoencoder:
         
         # Decoder
         # Calculate the shape after encoding
-        encoded_shape = (self.input_shape[0] // 8, self.input_shape[1] // 8, 512)
+        encoded_shape = (
+            self.input_shape[0] // self.downsampling_factor,
+            self.input_shape[1] // self.downsampling_factor,
+            512
+        )
         decoder_input = keras.Input(shape=(self.latent_dim,), name='decoder_input')
         
         x = layers.Dense(np.prod(encoded_shape), activation='relu')(decoder_input)

@@ -208,7 +208,7 @@ class PretrainedModels:
         print(f"BASE MODEL: {self.model_name.upper()} (Trainable: {self.base_model.trainable})")
         print("=" * 80)
         total_params = self.base_model.count_params()
-        trainable_params = sum([tf.size(w).numpy() for w in self.base_model.trainable_weights])
+        trainable_params = sum([keras.backend.count_params(w) for w in self.base_model.trainable_weights])
         print(f"Total params: {total_params:,}")
         print(f"Trainable params: {trainable_params:,}")
         print(f"Non-trainable params: {total_params - trainable_params:,}")

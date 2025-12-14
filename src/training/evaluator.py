@@ -94,8 +94,8 @@ class Evaluator:
             try:
                 roc_auc = roc_auc_score(y_test, y_pred_probs, average='weighted', multi_class='ovr')
                 results['roc_auc_weighted'] = roc_auc
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                print(f"Warning: Could not compute ROC AUC: {e}")
         
         # Per-class metrics
         results['per_class_metrics'] = {}

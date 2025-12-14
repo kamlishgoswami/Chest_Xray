@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
 from src.preprocessing import ImagePreprocessor, DenoisingAutoencoder, DataAugmentation
 from src.preprocessing.augmentation import ClassImbalanceHandler
-from src.models import ModelFactory
+from src.models import ModelFactory, PretrainedModels
 from src.training import Trainer, Evaluator
 from src.utils import DataLoader, Visualizer
 from configs.config import *
@@ -144,8 +144,6 @@ def main():
     print(f"Creating {MODEL_CONFIG['model_name'].upper()} model with transfer learning...")
     
     # Create model
-    from src.models import PretrainedModels
-    
     model_builder = PretrainedModels(**MODEL_CONFIG)
     model = model_builder.get_model()
     

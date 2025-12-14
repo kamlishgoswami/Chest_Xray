@@ -216,9 +216,9 @@ class SuperResolution:
         elif self.method in ['srcnn', 'vdsr']:
             # Placeholder for deep learning-based super-resolution
             # In practice, would load pretrained model and apply inference
-            print(f"Warning: {self.method} not implemented. Using bicubic interpolation.")
-            new_size = (image.shape[1] * self.scale_factor, 
-                       image.shape[0] * self.scale_factor)
-            return cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
+            raise NotImplementedError(
+                f"{self.method.upper()} super-resolution not yet implemented. "
+                f"Please use 'bicubic' method or implement a custom SR model."
+            )
         else:
             raise ValueError(f"Unknown super-resolution method: {self.method}")
