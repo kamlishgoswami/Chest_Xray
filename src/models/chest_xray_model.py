@@ -112,8 +112,10 @@ class ChestXrayModel:
         # vit_model = hub.KerasLayer(hub_url, trainable=True)
         # x = vit_model(inputs)
         
-        # Placeholder: For now, we'll use a simple architecture
-        # Replace this with actual ViT implementation when available
+        # TEMPORARY PLACEHOLDER ONLY - NOT A REAL ViT IMPLEMENTATION
+        # This placeholder uses Flatten which creates a very large dense layer (150K+ inputs)
+        # Real ViT architecture uses patch embeddings, positional encodings, and transformer blocks
+        # Replace this with actual ViT implementation (e.g., from transformers or tensorflow_hub)
         x = Flatten()(inputs)
         x = Dense(768, activation='relu')(x)  # ViT typically has 768 hidden dims
         x = Dropout(self.dropout_rate)(x)

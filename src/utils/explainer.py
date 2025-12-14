@@ -33,13 +33,17 @@ class ModelExplainer:
         Returns:
             Name of the last convolutional layer
         """
+        # Check if model has layers
+        if not hasattr(self.model, 'layers') or len(self.model.layers) == 0:
+            return None
+        
         for layer in reversed(self.model.layers):
             # Check if layer is Conv2D
             if 'conv' in layer.name.lower():
                 return layer.name
         
         # If no conv layer found in main model, check base model
-        if hasattr(self.model.layers[0], 'layers'):
+        if len(self.model.layers) > 0 and hasattr(self.model.layers[0], 'layers'):
             for layer in reversed(self.model.layers[0].layers):
                 if 'conv' in layer.name.lower():
                     return layer.name
