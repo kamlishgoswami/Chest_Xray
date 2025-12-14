@@ -210,8 +210,9 @@ class SuperResolution:
         """
         if self.method == 'bicubic':
             # Simple bicubic interpolation
-            new_size = (image.shape[1] * self.scale_factor, 
-                       image.shape[0] * self.scale_factor)
+            # Note: OpenCV uses (width, height) convention
+            new_size = (image.shape[1] * self.scale_factor,  # width
+                       image.shape[0] * self.scale_factor)   # height
             return cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
         elif self.method in ['srcnn', 'vdsr']:
             # Placeholder for deep learning-based super-resolution

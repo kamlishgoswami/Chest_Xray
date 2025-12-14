@@ -35,7 +35,9 @@ class DenoisingAutoencoder:
         self.input_shape = input_shape
         self.latent_dim = latent_dim
         self.noise_factor = noise_factor
-        self.downsampling_factor = 8  # 2^3 from three MaxPooling2D layers
+        # Downsampling factor from three MaxPooling2D(2,2) layers: 2^3 = 8
+        # This is critical for calculating the decoder's input shape
+        self.downsampling_factor = 8
         self.model = None
         self.encoder = None
         self.decoder = None
