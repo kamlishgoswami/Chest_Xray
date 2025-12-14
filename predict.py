@@ -9,7 +9,9 @@ import argparse
 import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Add parent directory to path for module imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.preprocessing.image_preprocessor import ChestXrayPreprocessor
 from src.utils.explainer import ModelExplainer

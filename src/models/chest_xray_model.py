@@ -5,7 +5,7 @@ Supports both CNN and Vision Transformer (ViT) architectures.
 
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Input, Flatten
 from tensorflow.keras.applications import (
     VGG16, VGG19, ResNet50, ResNet101, EfficientNetB0, EfficientNetB1
 )
@@ -104,8 +104,6 @@ class ChestXrayModel:
         # This is a simplified placeholder showing the interface
         
         # Example using TensorFlow Hub or custom ViT implementation
-        from tensorflow.keras.layers import Input
-        
         inputs = Input(shape=self.input_shape)
         
         # In a real implementation, you would load a pretrained ViT here
@@ -114,9 +112,9 @@ class ChestXrayModel:
         # vit_model = hub.KerasLayer(hub_url, trainable=True)
         # x = vit_model(inputs)
         
-        # Placeholder: For now, we'll use a simple dense layer
-        # Replace this with actual ViT implementation
-        x = GlobalAveragePooling2D()(inputs)
+        # Placeholder: For now, we'll use a simple architecture
+        # Replace this with actual ViT implementation when available
+        x = Flatten()(inputs)
         x = Dense(768, activation='relu')(x)  # ViT typically has 768 hidden dims
         x = Dropout(self.dropout_rate)(x)
         predictions = Dense(self.num_classes, activation='softmax')(x)
