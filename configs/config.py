@@ -4,9 +4,9 @@ Configuration file for the chest X-ray classification framework
 
 # Data Configuration
 DATA_CONFIG = {
-    'raw_data_dir': 'data/raw',
+    'raw_data_dir': 'Dataset',
     'processed_data_dir': 'data/processed',
-    'class_names': ['Normal', 'Pneumonia', 'COVID-19', 'Tuberculosis'],
+    'class_names': ['Normal', 'Penomonia', 'Covid', 'TB'],
     'num_classes': 4,
     'image_size': (224, 224),
     'test_size': 0.2,
@@ -55,7 +55,6 @@ MODEL_CONFIG = {
     # densenet121, densenet169, densenet201, mobilenet, mobilenetv2,
     # mobilenetv3small, mobilenetv3large, efficientnetb0-b7
     'model_name': 'resnet50',
-    'model_type': 'cnn',  # 'cnn' or 'vit'
     'input_shape': (224, 224, 3),
     'num_classes': 4,
     'weights': 'imagenet',
@@ -79,7 +78,7 @@ VIT_CONFIG = {
 
 # Training Configuration
 TRAINING_CONFIG = {
-    'epochs': 100,
+    'epochs': 3,
     'batch_size': 32,
     'learning_rate': 0.001,
     'optimizer': 'adam',

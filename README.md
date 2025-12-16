@@ -2,6 +2,29 @@
 
 A comprehensive deep learning framework for robust detection of **Normal**, **Pneumonia**, **COVID-19**, and **Tuberculosis** from chest X-ray images. This framework implements state-of-the-art preprocessing techniques, transfer learning with pretrained CNNs and Vision Transformers, and comprehensive evaluation metrics.
 
+> **📁 New to this project?** Check [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for a clear guide to all folders and files!
+
+## 🚀 Quick Start
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Train with ResNet50 (CNN)
+python3 examples/complete_pipeline.py
+
+# Train with Vision Transformer
+python3 examples/train_with_vit.py
+
+# Compare CNN vs ViT
+python3 examples/compare_cnn_vs_vit.py
+
+# 🔥 NEW: Run ALL models (17 CNNs + ViT) with comprehensive comparison
+python3 examples/comprehensive_model_comparison.py
+```
+
+📖 **See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed navigation guide**
+
 ## 🌟 Features
 
 ### Preprocessing Pipeline
@@ -262,6 +285,13 @@ The framework automatically generates:
 - Per-class performance metrics
 - Class distribution visualizations
 
+## � Documentation
+
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project organization guide
+- **[docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md)** - Implementation details & algorithms
+- **[docs/VIT_GUIDE.md](docs/VIT_GUIDE.md)** - Vision Transformer usage guide- **[docs/COMPREHENSIVE_COMPARISON_GUIDE.md](docs/COMPREHENSIVE_COMPARISON_GUIDE.md)** - 🔥 NEW: Run all models comparison- **[docs/COLAB_SETUP_GUIDE.md](docs/COLAB_SETUP_GUIDE.md)** - Google Colab setup instructions
+- **[docs/UNUSED_FEATURES.md](docs/UNUSED_FEATURES.md)** - Optional features guide
+
 ## 🔗 References
 
 ### Super-Resolution Techniques
@@ -270,6 +300,10 @@ The framework automatically generates:
 
 ### Vision Transformers
 - Dosovitskiy et al., "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale", ICLR 2021
+
+---
+
+**🎯 Ready to start?** Run `python3 examples/complete_pipeline.py` after activating your environment!
 
 ### Transfer Learning
 - He et al., "Deep Residual Learning for Image Recognition", CVPR 2016
