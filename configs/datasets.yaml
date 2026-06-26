@@ -1,0 +1,69 @@
+# Dataset registry — source-labeled, cross-source by design (PAPER_OUTLINE.md §7)
+#
+# Each entry maps a public dataset to (disease classes it provides, source label, role,
+# Kaggle slug, license). The SOURCE label is what makes the cross-source design possible:
+# the external/cross-source test set for each disease MUST have a different source than the
+# in-domain training set. Record license + access date per TRIPOD-AI / CLAIM.
+#
+# role: "in_domain"  -> used for train/val/in-domain-test
+#       "cross_source" -> held out, used ONLY as the external cross-source test
+#
+# NOTE: Kaggle slugs and exact folder layouts must be verified at download time
+# (datasets get re-versioned). build_manifest.py adapts to the actual folder tree.
+
+seed: 42
+img_size: [224, 224]
+classes: [Covid, Normal, Pneumonia, TB]
+
+# Split fractions (in-domain only; cross-source sets are 100% test)
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  patient_level: true        # split by patient_id where derivable from filename
+  dedup_perceptual: true     # remove near-duplicates (phash) BEFORE splitting
+
+datasets:
+  covid_radiography:
+    kaggle: "tawsifurrahman/covid19-radiography-database"
+    role: in_domain
+    provides: [Covid, Normal, Pneumonia]   # this DB has Viral Pneumonia + Normal too
+    source: "COVID19-Radiography-DB"
+    masks: true                            # ships lung masks
+    license: "see Kaggle page; research use"
+
+  covid_qu_ex:
+    kaggle: "anasmohammedtahir/covidqu"
+    role: cross_source
+    provides: [Covid]
+    source: "COVID-QU-Ex"
+    masks: true
+    license: "see Kaggle page; research use"
+
+  kermany_pneumonia:
+    kaggle: "paultimothymooney/chest-xray-pneumonia"
+    role: in_domain
+    provides: [Pneumonia, Normal]
+    source: "Kermany-Pediatric"
+    masks: false                           # segment with U-Net
+    license: "CC BY 4.0 (Kermany et al. 2018)"
+
+  rsna_pneumonia:
+    kaggle: "iamtapendu/rsna-pneumonia-processed-dataset"   # verified 2026-06: dataset (not competition)
+    role: cross_source
+    provides: [Pneumonia, Normal]
+    source: "RSNA"
+    masks: false
+    license: "RSNA challenge terms; research use"
+    optional: true                          # ~11 GB; Pneumonia cross-source only. Download later:
+                                            #   python scripts/download_data.py --only rsna_pneumonia
+
+  # TB: kmader bundle ships Shenzhen (ChinaSet, CHNCXR_*) AND Montgomery (MCUCXR_*) as
+  # SEPARATE folders -> we split them into two sources at manifest time (see notes below).
+  tb_shenzhen_montgomery_bundle:
+    kaggle: "kmader/pulmonary-chest-xray-abnormalities"      # verified 2026-06: contains both sources
+    role: in_domain                                          # Shenzhen=in_domain, Montgomery=cross_source (split in code)
+    provides: [TB, Normal]
+    source: "Shenzhen+Montgomery"                            # placeholder; manifest re-labels by folder
+    masks: true                                              # Montgomery ships lung masks
+    license: "U.S. NLM public; research use (Jaeger et al. 2014)"

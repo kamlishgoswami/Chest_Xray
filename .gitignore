@@ -5,19 +5,8 @@ __pycache__/
 *.so
 .Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 
 # Virtual Environment
@@ -26,42 +15,58 @@ ENV/
 env/
 .venv
 
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints
 
-# TensorFlow/Keras
+# Models / weights (never commit)
 *.h5
 *.hdf5
+*.keras
 *.pb
+*.pt
+*.pth
+*.onnx
 saved_model/
+checkpoints/
 
-# Training artifacts
-checkpoints/*.h5
-checkpoints/*.hdf5
-logs/
-*.log
-
-# Data
+# Data (downloaded, not versioned)
 data/raw/*
 !data/raw/.gitkeep
+data/masks/*
+!data/masks/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+# Drive-staging zips (8+ GB — never push to git; they live on Google Drive)
+data/drive_staging/
+# NOTE: data/manifest.csv (8 MB) IS intentionally tracked (Colab reuse + reproducibility)
 
-# Results
-results/*.png
-results/*.jpg
-results/*.jpeg
-results/*.csv
-results/*.json
+# Copyrighted publisher PDFs — never commit (especially to a public repo)
+Benchmark_papers/
+*.pdf
 
-# IDE
+# Old / legacy code, not for publication
+legacy/
+docs/_legacy/
+
+# Results / outputs
+results/*
+!results/.gitkeep
+*.log
+
+# Paper build artifacts
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.out
+paper/**/*.synctex.gz
+paper/**/*.fls
+paper/**/*.fdb_latexmk
+
+# IDE / OS
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-
-# OS
 Thumbs.db
-.DS_Store

@@ -1,0 +1,19 @@
+# Phase 1 training config (METHODS_SECTION §3.2.2)
+seed: 42
+img_size: [224, 224]
+num_classes: 4
+
+# Colab vs local budgets (§3.2.2)
+epochs: 100          # local quick test: override with --epochs 20
+batch_size: 32       # local: 8
+
+models:              # the 7-model zoo (§6)
+  - densenet201
+  - efficientnetb0
+  - resnet50
+  - mobilenetv3large
+  - xception
+  - vit
+  - lenet5
+
+augment: true        # train split only, clinically constrained (§3.2.4)
