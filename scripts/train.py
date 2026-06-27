@@ -62,13 +62,22 @@ def main():
     for i, name in enumerate(args.models, 1):
         out_dir = ROOT / "results" / name
         ckpt = out_dir / f"{name}_best.keras"
-        if args.resume and ckpt.exists():
-            print(f"\n[skip] MODEL {i}/{total}: {name} — already trained (checkpoint on disk)", flush=True)
-            continue
-        out_dir.mkdir(parents=True, exist_ok=True)
-        print(f"\n{'#'*70}\n###  TRAINING MODEL {i}/{total}:  {name.upper()}\n{'#'*70}", flush=True)
-        model, base = build_model(name, num_classes=cfg["num_classes"], img_size=img_size)
+        done_marker = out_dir / f"{name}.done"       # written ONLY when training fully completes
         bdir = f"{args.backup_dir}/{name}" if args.backup_dir else None
+
+        # --resume skips a model ONLY if it FINISHED (done marker present), NOT merely because a
+        # best-checkpoint exists — ModelCheckpoint writes _best.keras after epoch 1, so the file
+        # existing does NOT mean training finished. (Fixes the "stopped early -> wrongly skipped" bug.)
+        if args.resume and done_marker.exists():
+            print(f"\n[skip] MODEL {i}/{total}: {name} — already FINISHED (done marker present)", flush=True)
+            continue
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+        interrupted = bdir is not None and Path(bdir).exists()
+        tag = "RESUMING (interrupted)" if interrupted else "TRAINING"
+        print(f"\n{'#'*70}\n###  {tag} MODEL {i}/{total}:  {name.upper()}\n{'#'*70}", flush=True)
+
+        model, base = build_model(name, num_classes=cfg["num_classes"], img_size=img_size)
         hist = train_two_phase(name, model, base, train_ds, val_ds,
                                epochs=args.epochs, ckpt_path=str(ckpt), class_weight=cw,
                                backup_dir=bdir)
@@ -76,8 +85,11 @@ def main():
         hist_json = {ph: {k: [float(v) for v in vals] for k, vals in h.history.items()}
                      for ph, h in hist.items()}
         (out_dir / f"{name}_history.json").write_text(json.dumps(hist_json, indent=2))
+        done_marker.write_text("ok")                 # mark FINISHED so --resume can safely skip next time
+        if bdir and Path(bdir).exists():              # finished -> drop the per-epoch backup (no longer needed)
+            import shutil; shutil.rmtree(bdir, ignore_errors=True)
         print(f"\n✅ MODEL {i}/{total} DONE: {name} — best weights saved to {ckpt}", flush=True)
-        print(f"   (if results/ is symlinked to Drive, this is already safe on Drive)\n", flush=True)
+        print(f"   (results/ symlinked to Drive => already safe on Drive)\n", flush=True)
 
 
 if __name__ == "__main__":
