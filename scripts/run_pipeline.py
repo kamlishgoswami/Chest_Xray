@@ -181,6 +181,8 @@ def main():
     p.add_argument("--epochs", type=int, default=20)
     p.add_argument("--batch-size", type=int, default=32)
     p.add_argument("--per-class", type=int, default=300, help="audit/xai/robust sample cap per class")
+    p.add_argument("--backup-dir", default=None,
+                   help="per-epoch BackupAndRestore dir for training (point at Drive on Colab)")
     p.add_argument("--smoke", action="store_true", help="tiny-subset end-to-end (delegates to smoke_test.py)")
     args = p.parse_args()
 
@@ -198,9 +200,12 @@ def main():
 
     if "train" in stages:
         done += 1; _banner("train (live Keras progress below)", done, total)
-        _stream([sys.executable, str(ROOT / "scripts" / "train.py"),
-                 "--models", *models, "--epochs", str(args.epochs),
-                 "--batch-size", str(args.batch_size), "--resume"])
+        train_cmd = [sys.executable, str(ROOT / "scripts" / "train.py"),
+                     "--models", *models, "--epochs", str(args.epochs),
+                     "--batch-size", str(args.batch_size), "--resume"]
+        if args.backup_dir:
+            train_cmd += ["--backup-dir", args.backup_dir]
+        _stream(train_cmd)
     if "eval" in stages:
         done += 1; _banner("eval (in-domain metrics + calibration)", done, total)
         _stream([sys.executable, str(ROOT / "scripts" / "evaluate.py"), "--models", *models])

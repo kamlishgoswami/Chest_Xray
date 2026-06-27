@@ -37,6 +37,8 @@ def main():
     p.add_argument("--epochs", type=int, default=cfg["epochs"])
     p.add_argument("--batch-size", type=int, default=cfg["batch_size"])
     p.add_argument("--resume", action="store_true", help="skip models with an existing checkpoint")
+    p.add_argument("--backup-dir", default=None,
+                   help="per-epoch BackupAndRestore dir (point at Google Drive for crash recovery)")
     args = p.parse_args()
 
     from src.data.loaders import load_manifest, filter_rows, make_dataset, labels_int
@@ -65,8 +67,10 @@ def main():
         out_dir.mkdir(parents=True, exist_ok=True)
         print(f"\n=== training {name} ===")
         model, base = build_model(name, num_classes=cfg["num_classes"], img_size=img_size)
+        bdir = f"{args.backup_dir}/{name}" if args.backup_dir else None
         hist = train_two_phase(name, model, base, train_ds, val_ds,
-                               epochs=args.epochs, ckpt_path=str(ckpt), class_weight=cw)
+                               epochs=args.epochs, ckpt_path=str(ckpt), class_weight=cw,
+                               backup_dir=bdir)
         # persist history (json-serializable)
         hist_json = {ph: {k: [float(v) for v in vals] for k, vals in h.history.items()}
                      for ph, h in hist.items()}

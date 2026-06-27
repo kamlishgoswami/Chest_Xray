@@ -32,14 +32,19 @@ def class_weights_from_labels(y_int, max_ratio=8.0):
     return {c: min(w, lo * max_ratio) for c, w in raw.items()}
 
 
-def _callbacks(ckpt_path, monitor="val_accuracy"):
+def _callbacks(ckpt_path, monitor="val_accuracy", backup_dir=None):
     from tensorflow.keras import callbacks
 
-    return [
+    cbs = [
         callbacks.EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True),
         callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=5, min_lr=1e-8),
         callbacks.ModelCheckpoint(ckpt_path, monitor=monitor, save_best_only=True),
     ]
+    # Per-epoch crash recovery: if backup_dir is on Drive, a Colab disconnect resumes from the
+    # LAST EPOCH instead of from scratch on the next run. (No-op if backup_dir is None.)
+    if backup_dir is not None:
+        cbs.append(callbacks.BackupAndRestore(backup_dir=str(backup_dir)))
+    return cbs
 
 
 def compile_model(model, lr):
@@ -51,10 +56,11 @@ def compile_model(model, lr):
 
 
 def train_two_phase(name, model, base, train_ds, val_ds, *, epochs, ckpt_path,
-                    class_weight=None):
+                    class_weight=None, backup_dir=None):
     """Run the two-phase protocol. LeNet5 (base is None) trains single-phase from scratch.
 
-    Returns the per-phase Keras History objects. TODO(Phase 1): wire dataset pipeline.
+    `backup_dir` (e.g. on Google Drive) enables per-epoch crash recovery via BackupAndRestore.
+    Returns the per-phase Keras History objects.
     """
     histories = {}
 
@@ -62,20 +68,22 @@ def train_two_phase(name, model, base, train_ds, val_ds, *, epochs, ckpt_path,
         compile_model(model, LR1)
         histories["scratch"] = model.fit(
             train_ds, validation_data=val_ds, epochs=epochs,
-            class_weight=class_weight, callbacks=_callbacks(ckpt_path))
+            class_weight=class_weight, callbacks=_callbacks(ckpt_path, backup_dir=backup_dir))
         return histories
 
-    # Phase 1 — frozen base, train head
+    # Phase 1 — frozen base, train head (separate backup subdir so phases don't clash)
     base.trainable = False
     compile_model(model, LR1)
+    bd1 = f"{backup_dir}/phase1" if backup_dir else None
     histories["phase1"] = model.fit(
         train_ds, validation_data=val_ds, epochs=epochs // 2,
-        class_weight=class_weight, callbacks=_callbacks(ckpt_path))
+        class_weight=class_weight, callbacks=_callbacks(ckpt_path, backup_dir=bd1))
 
     # Phase 2 — unfreeze, fine-tune end-to-end at reduced lr
     base.trainable = True
     compile_model(model, LR2)
+    bd2 = f"{backup_dir}/phase2" if backup_dir else None
     histories["phase2"] = model.fit(
         train_ds, validation_data=val_ds, epochs=epochs // 2,
-        class_weight=class_weight, callbacks=_callbacks(ckpt_path))
+        class_weight=class_weight, callbacks=_callbacks(ckpt_path, backup_dir=bd2))
     return histories
