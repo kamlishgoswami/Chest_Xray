@@ -121,3 +121,61 @@ def calibration_metrics(y_true, y_prob, n_bins=15):
         "brier": brier_score(y_true, y_prob),
         "nll": nll(y_true, y_prob),
     }
+
+
+# ------------------------------------------------------ cross-model statistics (P9)
+
+def cross_model_stats(per_sample_correct):
+    """Friedman omnibus + pairwise McNemar (Holm-corrected) over models.
+
+    `per_sample_correct`: dict {model_name: 1-D bool/int array of per-test-sample correctness},
+    all arrays the SAME length and aligned to the SAME ordered test set.
+    Returns dict(friedman, mcnemar) — mcnemar holds Holm-adjusted p-values per model pair.
+    With <2 models, returns a note instead.
+    """
+    from itertools import combinations
+    names = list(per_sample_correct)
+    if len(names) < 2:
+        return {"note": "need >=2 models for cross-model stats"}
+
+    mats = {n: np.asarray(per_sample_correct[n]).astype(int) for n in names}
+    n_samples = len(next(iter(mats.values())))
+
+    # Friedman omnibus (needs >=3 models to be meaningful)
+    friedman = {"note": "needs >=3 models"}
+    if len(names) >= 3:
+        try:
+            from scipy.stats import friedmanchisquare
+            stat, p = friedmanchisquare(*[mats[n] for n in names])
+            friedman = {"statistic": float(stat), "p_value": float(p)}
+        except (ValueError, ImportError) as e:
+            friedman = {"note": f"friedman unavailable: {e}"}
+
+    # pairwise McNemar with continuity correction, then Holm-Bonferroni across all pairs
+    pairs = list(combinations(names, 2))
+    raw = []
+    for a, b in pairs:
+        b01 = int(((mats[a] == 1) & (mats[b] == 0)).sum())  # a right, b wrong
+        b10 = int(((mats[a] == 0) & (mats[b] == 1)).sum())  # a wrong, b right
+        if b01 + b10 == 0:
+            p = 1.0
+        else:
+            chi2 = (abs(b01 - b10) - 1) ** 2 / (b01 + b10)
+            from scipy.stats import chi2 as chi2_dist
+            p = float(chi2_dist.sf(chi2, 1))
+        raw.append(((a, b), p))
+
+    # Holm step-down
+    order = sorted(range(len(raw)), key=lambda i: raw[i][1])
+    m = len(raw)
+    adj = [None] * m
+    prev = 0.0
+    for rank, i in enumerate(order):
+        a = min(1.0, (m - rank) * raw[i][1])
+        a = max(a, prev)  # enforce monotonicity
+        adj[i] = a
+        prev = a
+
+    mcnemar = {f"{a}__vs__{b}": {"p_raw": float(p), "p_holm": float(adj[i])}
+               for i, ((a, b), p) in enumerate(raw)}
+    return {"n_samples": n_samples, "friedman": friedman, "mcnemar": mcnemar}

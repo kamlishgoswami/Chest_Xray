@@ -25,6 +25,7 @@ This paper sits at the intersection of two literatures we have each read in full
    by hand on single images without a portable score.
 
 **Twin contribution (equal billing):**
+
 - **(M) Method:** the **SRC** — a per-model, per-channel shortcut-reliance *certificate* with a validity
   gate — and its **predictive coupling** (SRC → cross-source ΔAcc AND ECE). *No paper in either literature
   does this.*
@@ -45,14 +46,14 @@ Venues vary (2 Q1 journals: Nat. Mach. Intell. 2021, MTAP/Springer 2024; 3 confe
 1 workshop preprint). **NOT all disclaim our exact capability** — DeGrave (2021) already performs
 null-controlled counterfactual edits on CXR shortcuts. Do not present this ledger as proof of blanket novelty.
 
-| Neighbor | What it does (verified) | Our delta | Link |
-|---|---|---|---|
-| **Occlusion eval — Springer 2024 (MTAP)** ✅READ | Single black-box lung occlusion + random-region control; reliance correlates with cross-dataset AUC instability (*SD_all*). COVID-vs-negative; 6 models incl. DenseNet-121, DarkCovidNet, ResNet, Conv-4 | No per-channel decomposition; no certificate; no causal-intervention framing; no calibration analysis | https://doi.org/10.1007/s11042-024-18543-y |
-| **FastDiME — ECCV 2024 (conference, not journal)** ✅READ | Diffusion counterfactual *generation* adding/removing ONE named shortcut (pacemaker/drain/ruler) + a per-model reliance pipeline (MAD/MD). CheXpert/NIH, ISIC, CelebA | Flips one annotated semantic shortcut; needs annotations + a trained generator (they flag generator bias); no orthogonal-channel taxonomy, no sham null, no certificate; reliance = in-vs-balanced AUROC gap only — no cross-source OOD, no calibration | https://doi.org/10.1007/978-3-031-73016-0_20 · arXiv 2312.14223 |
-| **Causal Attribution — Gordaliza et al. 2025** ✅READ | Shapley + do-operator + importance-sampling attribution of MS-lesion **segmentation** drops to which *real mechanism shifted* — acquisition P(X\|S) vs annotation P(Y\|X,A). nnU-Net, MSSEG2016 | Attributes *real shifts that occurred*, not a model's reliance on a shortcut channel; segmentation not classification; no shortcut intervention, no sham, no certificate, no calibration | arXiv 2512.09094 (NeurIPS 2025 **Workshop preprint**, not a journal) |
-| **Spuriosity Rankings — NeurIPS 2023 (CV)** ✅READ | Ranks within-class images by spuriosity via human-annotated neural features; bias = spurious gap (high/low-spuriosity acc) across 89 ImageNet models. App. B runs gray/blur/patch-rotate region interventions | Natural per-class cues on ImageNet/Waterbirds/CelebA, not orthogonal nuisance channels; needs feature annotation; bias = in-distribution gap, not cross-source OOD; no calibration, no certificate | arXiv 2212.02648 (**NeurIPS 2023**, not CVPR) |
-| **GroupDRO — ICLR 2020 (CV)** ✅READ | Worst-group-loss training; needs per-example group labels; works only with strong regularization in overparam. regime. Waterbirds/CelebA/MultiNLI | Training-time *mitigation*, not an audit; needs annotated groups (we need none); no causal intervention, no sham, no certificate, no calibration, no cross-source eval | arXiv 1911.08731 |
-| **DeGrave, Janizek & Lee — Nat. Mach. Intell. 2021 (Q1) — CLOSEST CXR NEIGHBOR** ✅READ | Names CXR shortcut channels (markers, border radiopacity, positioning, AP/PA projection, sex) via Expected-Gradients + CycleGAN. Cross-source OOD shown (AUC 0.99→0.70–0.76). Runs **interventional edits WITH a random-patch null control** (Fig 3, single-image + population p-values). 10 architectures | Their edits are **manual, per-feature, single-image, qualitative** — not a systematic orthogonal-channel taxonomy with an inside-lung null and an automated metric; **no per-model certificate + validity gate**; **no calibration coupling** (AUC/log-odds only); reliance not distilled into a portable predictive score | https://doi.org/10.1038/s42256-021-00338-7 |
+| Neighbor                                                                                        | What it does (verified)                                                                                                                                                                                                                                                                                           | Our delta                                                                                                                                                                                                                                                                                                                                    | Link                                                                      |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Occlusion eval — Springer 2024 (MTAP)** ✅READ                                         | Single black-box lung occlusion + random-region control; reliance correlates with cross-dataset AUC instability (*SD_all*). COVID-vs-negative; 6 models incl. DenseNet-121, DarkCovidNet, ResNet, Conv-4                                                                                                        | No per-channel decomposition; no certificate; no causal-intervention framing; no calibration analysis                                                                                                                                                                                                                                        | https://doi.org/10.1007/s11042-024-18543-y                                |
+| **FastDiME — ECCV 2024 (conference, not journal)** ✅READ                                | Diffusion counterfactual*generation* adding/removing ONE named shortcut (pacemaker/drain/ruler) + a per-model reliance pipeline (MAD/MD). CheXpert/NIH, ISIC, CelebA                                                                                                                                            | Flips one annotated semantic shortcut; needs annotations + a trained generator (they flag generator bias); no orthogonal-channel taxonomy, no sham null, no certificate; reliance = in-vs-balanced AUROC gap only — no cross-source OOD, no calibration                                                                                     | https://doi.org/10.1007/978-3-031-73016-0_20 · arXiv 2312.14223          |
+| **Causal Attribution — Gordaliza et al. 2025** ✅READ                                    | Shapley + do-operator + importance-sampling attribution of MS-lesion**segmentation** drops to which *real mechanism shifted* — acquisition P(X\|S) vs annotation P(Y\|X,A). nnU-Net, MSSEG2016                                                                                                           | Attributes*real shifts that occurred*, not a model's reliance on a shortcut channel; segmentation not classification; no shortcut intervention, no sham, no certificate, no calibration                                                                                                                                                    | arXiv 2512.09094 (NeurIPS 2025**Workshop preprint**, not a journal) |
+| **Spuriosity Rankings — NeurIPS 2023 (CV)** ✅READ                                       | Ranks within-class images by spuriosity via human-annotated neural features; bias = spurious gap (high/low-spuriosity acc) across 89 ImageNet models. App. B runs gray/blur/patch-rotate region interventions                                                                                                     | Natural per-class cues on ImageNet/Waterbirds/CelebA, not orthogonal nuisance channels; needs feature annotation; bias = in-distribution gap, not cross-source OOD; no calibration, no certificate                                                                                                                                           | arXiv 2212.02648 (**NeurIPS 2023**, not CVPR)                       |
+| **GroupDRO — ICLR 2020 (CV)** ✅READ                                                     | Worst-group-loss training; needs per-example group labels; works only with strong regularization in overparam. regime. Waterbirds/CelebA/MultiNLI                                                                                                                                                                 | Training-time*mitigation*, not an audit; needs annotated groups (we need none); no causal intervention, no sham, no certificate, no calibration, no cross-source eval                                                                                                                                                                      | arXiv 1911.08731                                                          |
+| **DeGrave, Janizek & Lee — Nat. Mach. Intell. 2021 (Q1) — CLOSEST CXR NEIGHBOR** ✅READ | Names CXR shortcut channels (markers, border radiopacity, positioning, AP/PA projection, sex) via Expected-Gradients + CycleGAN. Cross-source OOD shown (AUC 0.99→0.70–0.76). Runs**interventional edits WITH a random-patch null control** (Fig 3, single-image + population p-values). 10 architectures | Their edits are**manual, per-feature, single-image, qualitative** — not a systematic orthogonal-channel taxonomy with an inside-lung null and an automated metric; **no per-model certificate + validity gate**; **no calibration coupling** (AUC/log-odds only); reliance not distilled into a portable predictive score | https://doi.org/10.1038/s42256-021-00338-7                                |
 
 > **Honesty note:** all 6 rows are full-PDF verified. Rows once cited but never read were REMOVED
 > (CLIP Fairness Springer 2026, "Lung Attention Ratio", Maguolo & Nanni, DB-structure bias, ElRep, PDE) —
@@ -84,13 +85,13 @@ These are the "reach 96–99% on pooled data, never verify disease-not-dataset" 
 **Anchor differentiators (all rows):** they POOL + random-split → we keep SOURCE-LABELED + cross-source;
 they report accuracy/heatmaps → we causally certify reliance; they stop at "it works" → we predict collapse.
 
-| # | Paper | Venue / yr | Dataset (verified) | Their admitted gap = our contribution |
-|---|---|---|---|---|
-| B1 | Deepak & Bhat — multi-stage 17-class ✅READ | Elsevier ESWA 2025 (Q1) | pooled Kermany+Patel+QU-Ex+NIH, **1,700 imgs**, 100/class test | *Own words:* no external validation, no XAI, no ablation; admits small-test "statistical uncertainty" |
-| B2 | Patel et al. — explainable TL ⭐ ✅READ | Elsevier AEJ 2024 (Q1) | pooled Cohen+Kermany+NIAID+LIDC, **7,389 imgs**, 80/20 | *Own words:* Grad-CAM is **"correlative, rather than causative"**; single pooled set, no faithfulness metric, no calibration/abstention/bias analysis |
-| B4 | Aljuaid et al. — 6-CNN comparison ✅READ | Elsevier BSPC 2026 (Q1) | single balanced Kaggle, **6,939 imgs**, 5-fold | *Claims* "no spurious correlations" but only via **qualitative Grad-CAM eyeballing**, no cross-dataset test to verify; no calibration |
-| B5 | Deepak & Bhat — 3-stage COVID/TB ✅READ | Springer Soft Comp 2026 (Q1) | **COVID-QU-Ex + TB-DB — OUR EXACT SOURCES**, 33,920 imgs | *Own words:* defers cross-independent-dataset validation, interpretability, AND imaging-condition robustness to "future work" |
-| B6 | Slimani & Bentourkia — DWT+seg+GAN ✅READ | Springer JIIM 2025 (Q1) | **COVID-QU-Ex + Shenzhen + Montgomery + JSRT — OUR EXACT SOURCES** | No XAI at all; no cross-source *classification* test; no calibration/bias. (Bonus: their U-Net++ is a usable lung-mask source for our background channel) |
+| #  | Paper                                        | Venue / yr                   | Dataset (verified)                                                        | Their admitted gap = our contribution                                                                                                                         |
+| -- | -------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1 | Deepak & Bhat — multi-stage 17-class ✅READ | Elsevier ESWA 2025 (Q1)      | pooled Kermany+Patel+QU-Ex+NIH,**1,700 imgs**, 100/class test       | *Own words:* no external validation, no XAI, no ablation; admits small-test "statistical uncertainty"                                                       |
+| B2 | Patel et al. — explainable TL ⭐ ✅READ     | Elsevier AEJ 2024 (Q1)       | pooled Cohen+Kermany+NIAID+LIDC,**7,389 imgs**, 80/20               | *Own words:* Grad-CAM is **"correlative, rather than causative"**; single pooled set, no faithfulness metric, no calibration/abstention/bias analysis |
+| B4 | Aljuaid et al. — 6-CNN comparison ✅READ    | Elsevier BSPC 2026 (Q1)      | single balanced Kaggle,**6,939 imgs**, 5-fold                       | *Claims* "no spurious correlations" but only via **qualitative Grad-CAM eyeballing**, no cross-dataset test to verify; no calibration                 |
+| B5 | Deepak & Bhat — 3-stage COVID/TB ✅READ     | Springer Soft Comp 2026 (Q1) | **COVID-QU-Ex + TB-DB — OUR EXACT SOURCES**, 33,920 imgs           | *Own words:* defers cross-independent-dataset validation, interpretability, AND imaging-condition robustness to "future work"                               |
+| B6 | Slimani & Bentourkia — DWT+seg+GAN ✅READ   | Springer JIIM 2025 (Q1)      | **COVID-QU-Ex + Shenzhen + Montgomery + JSRT — OUR EXACT SOURCES** | No XAI at all; no cross-source*classification* test; no calibration/bias. (Bonus: their U-Net++ is a usable lung-mask source for our background channel)    |
 
 > **B2 (Patel) ⭐** = cite FIRST in applied related work: its admitted "correlative, not causative" XAI is
 > the cleanest motivation for CSA. **B5 + B6** = strongest overlap (our exact datasets + backbones) → ideal
@@ -121,8 +122,12 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
   R², CI). *The calibration link is unique among all 11 read papers.*
 - **C4 — Applied benchmark audit (TWIN-B):** run CSA/SRC on 96–99%-style CXR classifiers (cf. B1–B6) on
   the canonical datasets; show the cross-source collapse + reliance they assert-away or never test.
-- **C5 — XAI corroboration + certificate-gated abstention:** quantitative faithfulness/stability degrades
-  predictably with SRC; SRC + calibration → accuracy/coverage deployment curves.
+- **C5 — XAI corroboration + certificate-gated abstention (TWIN-A support):**
+  (a) **two independent-family** saliency methods (Grad-CAM + Integrated Gradients) quantified by
+  **insertion/deletion AUC, faithfulness correlation, stability/SSIM** — these degrade predictably as SRC rises;
+  (b) **in-lung saliency fraction** (saliency mass inside the lung mask, reusing CSA masks) — an *independent*
+  cross-check: high-SRC models place more saliency outside the lung; (c) SRC + calibration →
+  accuracy/coverage abstention curves.
 
 *(C1–C3 = method core; C4 = applied core; C5 = completeness. All Colab-feasible — the audit is inference-only.)*
 
@@ -130,15 +135,15 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 
 ## 3. Reviewer Defense Matrix
 
-| Objection | Answer |
-|---|---|
-| "Shortcuts are old news / DeGrave did this." | Conceded and cited as closest neighbor. Our delta is the **certificate + calibration coupling + automated per-channel systematization**, NOT the existence of causal CXR intervention (see §0a guard). |
-| "Just the 2024 occlusion paper?" | Binary/correlational/single-region. We add per-channel causal attribution + certificate + calibration coupling — none of which it attempts. |
-| "Isn't this FastDiME?" | FastDiME needs annotations + a trained generator (own-stated bias risk); reliance = in-vs-balanced AUROC only. We are annotation/generator-free, with sham null, certificate, cross-source OOD, calibration. |
-| "Real shortcuts or noise?" | **Sham (no-op) + inside-lung negative controls** show null effect — soundness centerpiece + SRC validity gate. |
-| "Is the collapse shortcut or genuine shift?" | C3b confounder-separation: regress ΔAcc on SRC + check CSA-masking selectively recovers cross-source accuracy. |
-| "Why does auditing 99% papers matter?" | B1/B4/B5 *explicitly* defer or only-eyeball generalization/XAI; B2 concedes correlational XAI. We supply the test they omit, on their datasets. |
-| "Generality / reproducible / over-claiming?" | 7 architectures × multiple datasets; seeds/configs/public data/released code (TRIPOD-AI/CLAIM); we claim a *validated instrument* with stated limits (§8). |
+| Objection                                    | Answer                                                                                                                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "Shortcuts are old news / DeGrave did this." | Conceded and cited as closest neighbor. Our delta is the**certificate + calibration coupling + automated per-channel systematization**, NOT the existence of causal CXR intervention (see §0a guard). |
+| "Just the 2024 occlusion paper?"             | Binary/correlational/single-region. We add per-channel causal attribution + certificate + calibration coupling — none of which it attempts.                                                                 |
+| "Isn't this FastDiME?"                       | FastDiME needs annotations + a trained generator (own-stated bias risk); reliance = in-vs-balanced AUROC only. We are annotation/generator-free, with sham null, certificate, cross-source OOD, calibration. |
+| "Real shortcuts or noise?"                   | **Sham (no-op) + inside-lung negative controls** show null effect — soundness centerpiece + SRC validity gate.                                                                                        |
+| "Is the collapse shortcut or genuine shift?" | C3b confounder-separation: regress ΔAcc on SRC + check CSA-masking selectively recovers cross-source accuracy.                                                                                              |
+| "Why does auditing 99% papers matter?"       | B1/B4/B5*explicitly* defer or only-eyeball generalization/XAI; B2 concedes correlational XAI. We supply the test they omit, on their datasets.                                                             |
+| "Generality / reproducible / over-claiming?" | 7 architectures × multiple datasets; seeds/configs/public data/released code (TRIPOD-AI/CLAIM); we claim a*validated instrument* with stated limits (§8).                                                |
 
 ---
 
@@ -149,6 +154,12 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
   perceptual-hash dedup before split. (See §6 table.)
 - **4.2 Model zoo (7).** Verified in `configs/train.yaml`: densenet201, efficientnetb0, resnet50,
   mobilenetv3large, xception, vit, lenet5 (no-transfer baseline). Two-phase transfer learning.
+- **4.2b Minimal preprocessing (THESIS-CRITICAL).** CSA runs on **minimally preprocessed** images
+  (resize + [0,1] normalize only). Heavy enhancement (DAE / CLAHE / gamma / morphological opening) would
+  *normalize away the very signals CSA measures* — gamma/CLAHE flatten the **source-signature** channel,
+  morphological opening erases **border/marker** artifacts — confounding the audit. Any enhancement is
+  therefore studied as an **ablation axis** ("does preprocessing mask shortcut reliance?"), never baked in
+  as a fixed front-end.
 - **4.3 CSA — C1.** (a) Channel operators: border/marker masking; background replacement outside lung field
   (masks from `datasets.yaml` `masks:true` sources + U-Net for Kermany); source-signature normalization.
   (b) Causal estimator: Δ class-prob per intervention vs control, aggregated per model, with CI.
@@ -157,15 +168,59 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 - **4.4 SRC — C2.** Definition, per-channel decomposition, bootstrap CI, cross-model normalization, validity gate.
 - **4.5 Evaluation suite.** Standard metrics + calibration (ECE/Brier/NLL + temperature scaling) + robustness/SSP
   + quantitative XAI + selective prediction.
+- **4.5b XAI corroboration of SRC — C5.** Exactly **two** saliency methods from *different families* for
+  genuine cross-method robustness: **Grad-CAM** (CAM/gradient) + **Integrated Gradients** (path/axiomatic).
+  Deliberately excluded: **occlusion** (perturbation-based → overlaps CSA, not an independent check);
+  **LIME/SHAP** (slow, model-agnostic → add cost, not evidence). Quantitative faithfulness: insertion/deletion
+  AUC, faithfulness correlation, stability/SSIM under mild perturbation; plus the **in-lung saliency fraction**
+  vs SRC. Hypothesis: faithfulness ↓ and out-of-lung saliency ↑ as SRC ↑ — an independent confirmation of the
+  intervention-based audit. *(Frame as corroboration, not novelty: DeGrave already showed attention falls
+  outside the lung qualitatively.)*
 - **4.6 Predictive coupling — C3.** Regress cross-source ΔAcc and ECE on SRC; R², slope, CI; partial
   correlation controlling for in-domain accuracy.
 - **4.7 Confounder-separation — C3b.** Decompose collapse into shortcut-attributable (explained by SRC + CSA)
   vs genuine-shift residual; corroborate by CSA-masking the cross-source test set.
 - **4.8 Terminology discipline.** (a) cross-source/domain shift = the *outcome* SRC predicts; (b) covariate-shift
-  perturbations (SSP) = synthetic whole-image corruptions, *corroborating only, NOT a contribution*
-  (⚠️ cite the standard common-corruptions reference once read — NOT yet verified); (c) counterfactual
-  interventions (CSA) = the *method*. Never call (c) "data shift"; never claim (b) as novel.
+  perturbations (SSP) = synthetic whole-image corruptions, *corroborating only, NOT a contribution*;
+  (c) counterfactual interventions (CSA) = the *method*. Never call (c) "data shift"; never claim (b) as novel.
 - **4.9 Statistics.** Bootstrap CIs (1000×), Friedman, McNemar + Holm–Bonferroni.
+
+---
+
+## 4z. UNIFIED PIPELINE DESIGN (Stage 1 — the single coherent flow)
+
+**Focus decision:** the paper has ONE spine, locked **after the C3 verdict** (see §8b). The pipeline below is
+**spine-agnostic** — the same components/outputs are produced either way; only the *framing and which figure is
+Fig 1* change. So we build once, then frame once.
+
+- **Spine A (if C3 strong):** "An SRC certificate that *predicts* cross-source failure + miscalibration."
+  Marquee = Fig 4 (coupling). Method is the headline; applied audit is supporting proof.
+- **Spine B (if C3 weak):** "Published 96–99% CXR models rely on shortcuts and collapse cross-source — a
+  validated causal audit." Marquee = Table A2 + Fig 2 (audit + effects). Audit is the headline; SRC is the tool.
+
+**Pipeline stages → code module → emitted artifacts** (this is also the Stage-3 output checklist):
+
+| # | Stage | Module (✅built / ⛔todo) | Emits (files the small-data test must produce) |
+|---|---|---|---|
+| P0 | Data → manifest | `src/data` ✅, `scripts/build_manifest.py` ✅ | `data/manifest.csv` |
+| P1 | Train zoo | `scripts/train.py` ✅, `src/models/zoo.py` ✅, `trainer.py` ✅ | `results/<m>/<m>_best.keras`, `_history.json` |
+| P2 | In-domain eval + calibration | `scripts/evaluate.py` ✅, `metrics.py` ✅ | `results/<m>/metrics.json`, `table_a_in_domain.csv` |
+| P3 | CSA audit + SRC | `csa.py` ✅, `src_certificate.py` ✅ | `results/<m>/certificate.json` |
+| P4 | Cross-source + C3 coupling | `cross_domain.py` ✅ | `results/cross_source.json`, `c3_coupling.json` |
+| P5 | XAI corroboration (C5) | `src/xai` ⛔ TODO | `results/<m>/xai/{faithfulness.json, in_lung_fraction.json}` |
+| P6 | Robustness/SSP | `src/robustness` ⛔ TODO | `results/<m>/robustness.json` |
+| P7 | Abstention curves (C5) | `src/xai` or new ⛔ TODO | `results/<m>/abstention.json` |
+| P8 | Figures + LaTeX tables | `src/reporting` ⛔ TODO (NEW) | `results/figures/fig{1..7}.png`, `results/tables/*.tex` |
+| P9 | Stats (Friedman/McNemar/Holm) | `metrics.py` ⛔ extend | `results/stats_summary.json` |
+
+**Build status (verified 2026-06):** P0–P4 are real code (C3 path complete). P5–P9 are the "build everything"
+work remaining: implement `src/xai`, `src/robustness`, and a NEW `src/reporting` (figures + tables). One
+orchestrator `scripts/run_pipeline.py` (⛔ NEW) chains P1→P9 with `--models` and `--stages` flags so the small
+test and both Colab scripts call the *same* entrypoint (one codebase, three configs).
+
+**Component scope (locked — no scope creep):** 7 models · 4 classes · 3 shortcut channels + 2 controls ·
+2 XAI methods (Grad-CAM + Integrated Gradients) · 7 SSP perturbations · the figures/tables in §7 ONLY.
+Anything not in this table is OUT (no 30-model zoo, no 7-XAI suite, no t-SNE/ensemble — see XAI rationale §4.5b).
 
 ---
 
@@ -183,12 +238,12 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 
 ## 6. Datasets (verified against `configs/datasets.yaml`)
 
-| Disease | In-domain source | Cross-source test | Masks | Kaggle slug (verify at download) |
-|---|---|---|---|---|
-| COVID-19 | COVID19-Radiography-DB | COVID-QU-Ex | Yes | tawsifurrahman/covid19-radiography-database → anasmohammedtahir/covidqu |
-| Normal | COVID19-Radiography-DB | RSNA (optional, ~11 GB) | Partial | (above) → iamtapendu/rsna-pneumonia-processed-dataset |
-| Pneumonia | Kermany-Pediatric | RSNA Pneumonia | U-Net (Kermany has none) | paultimothymooney/chest-xray-pneumonia → RSNA |
-| Tuberculosis | Shenzhen | Montgomery | Yes (Montgomery ships masks) | kmader/pulmonary-chest-xray-abnormalities (split by folder in code) |
+| Disease      | In-domain source       | Cross-source test       | Masks                        | Kaggle slug (verify at download)                                         |
+| ------------ | ---------------------- | ----------------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| COVID-19     | COVID19-Radiography-DB | COVID-QU-Ex             | Yes                          | tawsifurrahman/covid19-radiography-database → anasmohammedtahir/covidqu |
+| Normal       | COVID19-Radiography-DB | RSNA (optional, ~11 GB) | Partial                      | (above) → iamtapendu/rsna-pneumonia-processed-dataset                   |
+| Pneumonia    | Kermany-Pediatric      | RSNA Pneumonia          | U-Net (Kermany has none)     | paultimothymooney/chest-xray-pneumonia → RSNA                           |
+| Tuberculosis | Shenzhen               | Montgomery              | Yes (Montgomery ships masks) | kmader/pulmonary-chest-xray-abnormalities (split by folder in code)      |
 
 Record license + version + access date (TRIPOD-AI/CLAIM). Masks define the CSA "background" channel.
 **Overlap with benchmarks:** COVID-QU-Ex + Shenzhen/Montgomery are the exact sources of B5 and B6 → direct
@@ -197,6 +252,7 @@ Record license + version + access date (TRIPOD-AI/CLAIM). Masks define the CSA "
 ---
 
 ## 7. Figures & Tables
+
 **Tables:** A in-domain baseline; A2 applied-audit (benchmark-style models, cross-source); B per-channel
 effects + controls; C SRC; D XAI vs SRC.
 **Figures:** 1 CSA schematic; 2 per-channel effects + negative controls; 3 SRC bars; 4 **SRC↔collapse/ECE
@@ -205,9 +261,12 @@ effects + controls; C SRC; D XAI vs SRC.
 ---
 
 ## 8. Limitations (soundness venues reward honesty)
+
 Chosen (non-exhaustive) shortcut channels; segmentation quality bounds the background channel; single
 modality (CXR); retrospective public data; GPU non-determinism minimized not eliminated; SRC validated on the
-datasets/models here — external re-validation needed before clinical claims.
+datasets/models here — external re-validation needed before clinical claims. **Preprocessing interacts with
+the audit:** heavy image enhancement can mask shortcut signals, so CSA is run on minimally preprocessed inputs
+and preprocessing is studied as an ablation rather than baked in (§4.2b).
 
 ---
 
@@ -216,6 +275,7 @@ datasets/models here — external re-validation needed before clinical claims.
 **C3 (SRC → cross-source ΔAcc AND ECE) is the single point of failure.** C1/C2/C4/C5 are mechanical once
 data + models exist (and C1+C2 are already coded; data + 53k-row manifest already built). But the paper's
 entire payoff is the coupling. **De-risk it FIRST, not last:**
+
 - After even 2–3 models are trained, run a *preliminary* C3 regression. If SRC shows NO relationship to
   collapse/ECE, STOP and rethink the SRC definition before training all 7 — do not discover this at the end.
 - Honest fallback if coupling is weak: the paper becomes "a validated shortcut-audit instrument + descriptive
@@ -228,6 +288,7 @@ SRC ✅ coded | cross_domain.py ⛔ NotImplementedError | models: 1/7 trained (l
 ---
 
 ## 9. Next Actions (after lock)
+
 1. Phase 0: Kaggle download + source-labeled manifest + masks (`src/data`).
 2. Phase 1: train 7 models; Table A baseline (`src/models`, `src/training`, `src/evaluation`).
 3. Phase 2 (core): CSA operators + estimator + negative controls (`src/shortcut/csa.py`).
@@ -239,6 +300,7 @@ SRC ✅ coded | cross_domain.py ⛔ NotImplementedError | models: 1/7 trained (l
 ---
 
 ## 10. Soundness Checklist (keep green before submission)
+
 - [ ] Negative controls show null effect (CSA validity proven)
 - [ ] Every result has CI + statistical test
 - [ ] All 7 models × all datasets reported (no cherry-picking)
@@ -246,5 +308,8 @@ SRC ✅ coded | cross_domain.py ⛔ NotImplementedError | models: 1/7 trained (l
 - [ ] Seeds/configs fixed (seed 42 in both configs); code release-ready
 - [ ] Coupling (C3) reported honestly even if modest
 - [ ] DeGrave-delta framing kept honest (no "first causal CXR intervention" claim)
+- [ ] CSA run on minimally preprocessed images (heavy enhancement studied as ablation, not baked in — §4.2b)
+- [ ] XAI corroboration uses 2 independent-family methods + quantitative faithfulness (not eyeballed heatmaps)
+- [ ] In-lung saliency fraction reported as independent SRC cross-check (framed as corroboration, not novelty)
 - [ ] Limitations stated plainly; TRIPOD-AI / CLAIM checklist attached
-- [ ] ⚠️ Resolve open items: read the common-corruptions ref (4.8); confirm each cited paper's current Q1 quartile
+- [ ] ⚠️ Resolve open items: confirm each cited paper's current Q1 quartile
