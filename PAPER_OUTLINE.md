@@ -178,6 +178,24 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
   outside the lung qualitatively.)*
 - **4.6 Predictive coupling — C3.** Regress cross-source ΔAcc and ECE on SRC; R², slope, CI; partial
   correlation controlling for in-domain accuracy.
+- **4.6a SRC vs. simpler-predictor baselines — C3 (MUST, near-free).** Regress ΔAcc/ΔECE on each trivial
+  alternative — in-domain accuracy, mean softmax confidence, predictive entropy, ECE, and the Grad-CAM
+  out-of-lung fraction (already computed in §4.5b) — and report head-to-head R² vs SRC. *Establishes SRC adds
+  predictive value beyond what's freely available; answers "is SRC even necessary?"* Reuses existing artifacts
+  (`metrics.json`, `xai.json`, `certificate.json`); no new training. **[PLANNED]**
+- **4.6b Leave-one-model-out (LOMO) prediction — C3 (MUST, earns the word "predicts").** Fit the SRC→ΔAcc/ΔECE
+  regression on 6 models, predict the held-out 7th, repeat; report predicted-vs-actual + LOMO R²/MAE. *Converts
+  the in-sample fit into genuine out-of-sample prediction — pre-empts the "your R² is circular" objection.*
+  Pure analysis on existing values; near-zero cost. **[PLANNED]**
+- **4.6c Post-temperature-scaling miscalibration — C3 (MUST, defends the "miscalibration" claim).** Apply the
+  val-fitted temperature T to the cross-source logits, recompute ECE, and re-run the SRC→ΔECE coupling. *Shows
+  SRC predicts miscalibration that temperature scaling CANNOT fix — i.e. SRC is not merely ordinary calibration
+  error.* Reuses `fit_temperature` (already in `metrics.py`). **[PLANNED]**
+- **4.6d Seeds + bootstrap CI on the coupling — C3 (addresses n=7).** Train 3 seeds/model (21 points) and report
+  a bootstrap CI on the regression slope. *Defeats the "n too small for regression" objection.* **Compute-gated:
+  run seeds on the 3-model go/no-go FIRST; expand to 7×3 only if the coupling holds** (§8b). Per-class/per-source
+  breakdown and mixed-effects models are deliberately **excluded** (over-engineering at this n; reads as fishing).
+  **[PLANNED]**
 - **4.7 Confounder-separation — C3b.** Decompose collapse into shortcut-attributable (explained by SRC + CSA)
   vs genuine-shift residual; corroborate by CSA-masking the cross-source test set.
 - **4.8 Terminology discipline.** (a) cross-source/domain shift = the *outcome* SRC predicts; (b) covariate-shift
@@ -207,20 +225,28 @@ Fig 1* change. So we build once, then frame once.
 | P2 | In-domain eval + calibration | `scripts/evaluate.py` ✅, `metrics.py` ✅ | `results/<m>/metrics.json`, `table_a_in_domain.csv` |
 | P3 | CSA audit + SRC | `csa.py` ✅, `src_certificate.py` ✅ | `results/<m>/certificate.json` |
 | P4 | Cross-source + C3 coupling | `cross_domain.py` ✅ | `results/cross_source.json`, `c3_coupling.json` |
-| P5 | XAI corroboration (C5) | `src/xai` ⛔ TODO | `results/<m>/xai/{faithfulness.json, in_lung_fraction.json}` |
-| P6 | Robustness/SSP | `src/robustness` ⛔ TODO | `results/<m>/robustness.json` |
-| P7 | Abstention curves (C5) | `src/xai` or new ⛔ TODO | `results/<m>/abstention.json` |
-| P8 | Figures + LaTeX tables | `src/reporting` ⛔ TODO (NEW) | `results/figures/fig{1..7}.png`, `results/tables/*.tex` |
-| P9 | Stats (Friedman/McNemar/Holm) | `metrics.py` ⛔ extend | `results/stats_summary.json` |
+| P5 | XAI corroboration (C5) | `src/xai/explain.py` ✅ | `results/<m>/xai.json` |
+| P6 | Robustness/SSP | `src/robustness/perturbations.py` ✅ | `results/<m>/robustness.json` |
+| P7 | Abstention curves (C5) | `src/shortcut/abstention.py` ✅ | `results/<m>/abstention.json` |
+| P8 | Figures + LaTeX tables | `src/reporting/figures.py` ✅ | `results/figures/*.png`, `results/tables/*.tex` |
+| P9 | Stats (Friedman/McNemar/Holm) | `metrics.py` ✅ (extended) | `results/stats_summary.json` |
 
-**Build status (verified 2026-06):** P0–P4 are real code (C3 path complete). P5–P9 are the "build everything"
-work remaining: implement `src/xai`, `src/robustness`, and a NEW `src/reporting` (figures + tables). One
-orchestrator `scripts/run_pipeline.py` (⛔ NEW) chains P1→P9 with `--models` and `--stages` flags so the small
-test and both Colab scripts call the *same* entrypoint (one codebase, three configs).
+**Build status (verified — all modules implemented, 0 `NotImplementedError`):** P0–P9 are real code and have
+been run **end-to-end on a tiny real subset** (Stage-3 local test passed: every artifact above was produced).
+Orchestrator `scripts/run_pipeline.py` ✅ chains P1→P9 with `--models`/`--stages`, with live streamed progress;
+the local smoke test and both Colab notebooks (`colab_small.ipynb`, `colab_full.ipynb`) call this SAME entrypoint
+(one codebase, three configs). **What remains is not coding but EXECUTION on Colab** (real training → real
+numbers). All results are still **[PLANNED]** until the Colab runs complete (only lenet5 has a real checkpoint).
 
 **Component scope (locked — no scope creep):** 7 models · 4 classes · 3 shortcut channels + 2 controls ·
 2 XAI methods (Grad-CAM + Integrated Gradients) · 7 SSP perturbations · the figures/tables in §7 ONLY.
 Anything not in this table is OUT (no 30-model zoo, no 7-XAI suite, no t-SNE/ensemble — see XAI rationale §4.5b).
+
+**Reviewer-hardening additions ADOPTED (analyses on existing artifacts, NOT new contributions):**
+§4.6a baselines · §4.6b LOMO · §4.6c post-TS ECE · §4.6d seeds+bootstrap (compute-gated) · Fig 8 failure panel ·
+S1 intervention-strength (supplement). **REJECTED (do not add):** source-identity classifier (already proven by
+DeGrave + dataset-bias lit; re-treads our closest competitor, dilutes novelty — cite instead, don't rebuild);
+mixed-effects/hierarchical regression and per-class×source breakdown (over-engineering at n≈21; reads as fishing).
 
 ---
 
@@ -254,9 +280,13 @@ Record license + version + access date (TRIPOD-AI/CLAIM). Masks define the CSA "
 ## 7. Figures & Tables
 
 **Tables:** A in-domain baseline; A2 applied-audit (benchmark-style models, cross-source); B per-channel
-effects + controls; C SRC; D XAI vs SRC.
+effects + controls; C SRC; D XAI vs SRC; **E SRC vs. baseline predictors (R² head-to-head, §4.6a) + LOMO
+predicted-vs-actual (§4.6b)**.
 **Figures:** 1 CSA schematic; 2 per-channel effects + negative controls; 3 SRC bars; 4 **SRC↔collapse/ECE
-(marquee)**; 5 XAI vs SRC; 6 accuracy/coverage; 7 SSP heatmap.
+(marquee, with post-TS ECE overlaid, §4.6c)**; 5 XAI vs SRC; 6 accuracy/coverage; 7 SSP heatmap;
+**8 failure-case qualitative panel** (in-domain high-conf-correct · cross-source high-conf-wrong · high-SRC vs
+low-SRC image · CSA intervention flips prediction · sham does not — makes the validity controls visible).
+**Supplement:** S1 intervention-strength sensitivity (sweep border fraction; SRC model-rank stable by Spearman, §4.4 cross-ref).
 
 ---
 
@@ -282,20 +312,36 @@ entire payoff is the coupling. **De-risk it FIRST, not last:**
   cross-source findings" (still publishable at a soundness venue), but the marquee claim must then be dropped.
   Decide the threshold for "coupling holds" (e.g. R² and CI) BEFORE looking at the result, to avoid p-hacking.
 
-**Current build state (verified 2026-06):** data ✅ | manifest ✅ (53,625 imgs) | CSA ✅ coded |
-SRC ✅ coded | cross_domain.py ⛔ NotImplementedError | models: 1/7 trained (lenet5 only).
+**Current build state (verified — all code complete):** data ✅ | manifest ✅ (53,625 imgs) |
+P0–P9 all implemented ✅ (CSA, SRC, cross_domain/C3, XAI, robustness, abstention, stats, reporting,
+orchestrator) | Stage-3 local end-to-end test PASSED | **models: 1/7 trained (lenet5 smoke checkpoint only)**.
+The remaining risk is therefore purely the **scientific outcome of C3 on real Colab runs**, not any missing code.
 
 ---
 
 ## 9. Next Actions (after lock)
 
-1. Phase 0: Kaggle download + source-labeled manifest + masks (`src/data`).
-2. Phase 1: train 7 models; Table A baseline (`src/models`, `src/training`, `src/evaluation`).
-3. Phase 2 (core): CSA operators + estimator + negative controls (`src/shortcut/csa.py`).
-4. Phase 2: SRC (`src/shortcut/src_certificate.py`).
-5. Phase 3: C3 coupling regression (`src/shortcut/cross_domain.py`).
-6. Phase 4: C4 applied audit + C5 (XAI vs SRC, abstention) (`src/xai`, `src/robustness`).
-7. Phase 5: figures/tables/manuscript + reproducibility package.
+> **Coding is COMPLETE** (P0–P9 implemented, 0 `NotImplementedError`, Stage-3 local test passed — see §8b).
+> What remains is **execution → validation → results → manuscript**, NOT building. Every component below already
+> exists and is run via the single orchestrator `scripts/run_pipeline.py` (Colab notebooks call the same entry).
+> All real numbers stay **[PLANNED]** until the corresponding Colab run completes.
+
+1. **Run the 3-model go/no-go (`colab_small.ipynb`).** lenet5 + two representative transfer-learning models
+   (densenet201, resnet50/vit); the full pipeline emits SRC, cross-source ΔAcc, ECE, **post-temperature-scaling
+   ECE (§4.6c)**, and the preliminary **C3 regression + baselines (§4.6a)**. Decide the "coupling holds"
+   threshold (R² and CI) **before** looking (§8b, no p-hacking).
+2. **If C3 is promising → full 7-model run (`colab_full.ipynb`).** All artifacts at full epochs; adds
+   **LOMO out-of-sample prediction (§4.6b)** to substantiate the word "predicts."
+3. **If the 7-model C3 holds → compute-gated 3-seed extension (§4.6d).** 7 models × 3 seeds = 21 instances;
+   report bootstrap CI on the coupling slope. (Skip if C3 is weak — do not spend the compute.)
+4. **Generate final artifacts** (all from existing reporting code): Tables A, A2, B, C, D, **E**; Figures 1–7 +
+   **Fig 8 failure-case panel**; Supplement **S1** intervention-strength sensitivity.
+5. **Write the manuscript around the spine the C3 verdict selects** (framing only — no code changes; see §4z):
+   - **Spine A (C3 strong):** SRC *predicts* cross-source failure and miscalibration. Marquee = Fig 4.
+   - **Spine B (C3 weak):** a validated causal shortcut-audit instrument with descriptive cross-source findings.
+     Marquee = Table A2 + Fig 2. The "predicts" claim is dropped (§8b fallback).
+6. **Complete the reproducibility package:** dataset access dates + licenses (TRIPOD-AI/CLAIM), fixed seeds/configs
+   (seed 42 in both configs), released code, and the TRIPOD-AI / CLAIM checklist (see §10).
 
 ---
 
