@@ -58,14 +58,15 @@ def main():
     val_ds = make_dataset(val_df, img_size=img_size, batch_size=args.batch_size, training=False)
     cw = class_weights_from_labels(labels_int(train_df))
 
-    for name in args.models:
+    total = len(args.models)
+    for i, name in enumerate(args.models, 1):
         out_dir = ROOT / "results" / name
         ckpt = out_dir / f"{name}_best.keras"
         if args.resume and ckpt.exists():
-            print(f"[skip] {name} (checkpoint exists)")
+            print(f"\n[skip] MODEL {i}/{total}: {name} — already trained (checkpoint on disk)", flush=True)
             continue
         out_dir.mkdir(parents=True, exist_ok=True)
-        print(f"\n=== training {name} ===")
+        print(f"\n{'#'*70}\n###  TRAINING MODEL {i}/{total}:  {name.upper()}\n{'#'*70}", flush=True)
         model, base = build_model(name, num_classes=cfg["num_classes"], img_size=img_size)
         bdir = f"{args.backup_dir}/{name}" if args.backup_dir else None
         hist = train_two_phase(name, model, base, train_ds, val_ds,
@@ -75,7 +76,8 @@ def main():
         hist_json = {ph: {k: [float(v) for v in vals] for k, vals in h.history.items()}
                      for ph, h in hist.items()}
         (out_dir / f"{name}_history.json").write_text(json.dumps(hist_json, indent=2))
-        print(f"[done] {name} -> {ckpt.relative_to(ROOT)}")
+        print(f"\n✅ MODEL {i}/{total} DONE: {name} — best weights saved to {ckpt}", flush=True)
+        print(f"   (if results/ is symlinked to Drive, this is already safe on Drive)\n", flush=True)
 
 
 if __name__ == "__main__":
