@@ -22,36 +22,90 @@ BASELINE = 0.0
 
 # ----------------------------------------------------------------- saliency maps
 
-def _last_conv_layer(model):
-    """Name of the last 4-D (conv) layer in a Keras model, for Grad-CAM."""
-    for layer in reversed(model.layers):
+def _find_conv_grad_model(model):
+    """Build a (inputs -> [last_conv_output, predictions]) model, descending into a nested
+    backbone sub-model if needed (our zoo wraps DenseNet/ResNet/etc. as an inner Functional model).
+
+    Returns a tf.keras.Model, or None if no 4-D conv output can be wired (e.g. ViT / pure MLP) —
+    in which case the caller falls back to Integrated Gradients.
+    """
+    import tensorflow as tf
+
+    def last_4d(layers):
+        for layer in reversed(layers):
+            try:
+                shp = layer.output.shape
+            except (AttributeError, TypeError):
+                continue
+            if shp is not None and len(shp) == 4:
+                return layer
+        return None
+
+    # 1) try a conv layer directly on the top model
+    layer = last_4d(model.layers)
+    if layer is not None:
         try:
-            if len(layer.output_shape) == 4:
-                return layer.name
-        except (AttributeError, TypeError):
-            continue
+            return tf.keras.models.Model(model.inputs, [layer.output, model.output])
+        except (ValueError, KeyError, TypeError):
+            pass
+
+    # 2) descend into a nested backbone sub-model (the common case for our transfer models)
+    for sub in model.layers:
+        if isinstance(sub, tf.keras.Model):
+            inner = last_4d(sub.layers)
+            if inner is None:
+                continue
+            try:
+                # run the top model functionally, exposing the inner conv output as a side output
+                feat_model = tf.keras.models.Model(sub.inputs, inner.output)
+                inp = model.inputs
+                # rebuild the forward pass so both the conv map and final preds share one graph
+                x = inp
+                conv_out = None
+                for lyr in model.layers:
+                    if lyr is sub:
+                        conv_out = feat_model(x if not isinstance(x, list) else x[0])
+                        x = sub(x if not isinstance(x, list) else x[0])
+                    else:
+                        if isinstance(lyr, tf.keras.layers.InputLayer):
+                            continue
+                        x = lyr(x)
+                if conv_out is not None:
+                    return tf.keras.models.Model(inp, [conv_out, x])
+            except (ValueError, KeyError, TypeError):
+                continue
     return None
 
 
 def grad_cam(model, image, class_idx, layer_name=None):
-    """Grad-CAM heatmap (H,W) in [0,1] for `class_idx`. Falls back gracefully if no conv layer."""
+    """Grad-CAM heatmap (H,W) in [0,1] for `class_idx`.
+
+    Robust to NESTED backbones (our zoo). If the conv layer cannot be cleanly wired (ViT/MLP, or
+    a graph that resists surgery), falls back to Integrated Gradients — both are in our 2-method
+    suite, so the audit never crashes on a model whose internals don't expose a usable conv map.
+    """
     import tensorflow as tf
 
-    layer_name = layer_name or _last_conv_layer(model)
-    if layer_name is None:                       # e.g. pure-MLP / ViT without 4-D layer
-        return integrated_gradients(model, image, class_idx)  # sensible fallback
-    grad_model = tf.keras.models.Model(
-        model.inputs, [model.get_layer(layer_name).output, model.output])
+    grad_model = _find_conv_grad_model(model)
+    if grad_model is None:
+        return integrated_gradients(model, image, class_idx)
+
     x = tf.convert_to_tensor(image[None].astype("float32"))
-    with tf.GradientTape() as tape:
-        conv_out, preds = grad_model(x)
-        loss = preds[:, class_idx]
-    grads = tape.gradient(loss, conv_out)[0]              # (h,w,c)
-    weights = tf.reduce_mean(grads, axis=(0, 1))         # (c,)
-    cam = tf.reduce_sum(conv_out[0] * weights, axis=-1)  # (h,w)
-    cam = tf.nn.relu(cam).numpy()
-    cam = _resize(cam, image.shape[:2])
-    return _norm01(cam)
+    try:
+        with tf.GradientTape() as tape:
+            conv_out, preds = grad_model(x)
+            loss = preds[:, class_idx]
+        grads = tape.gradient(loss, conv_out)
+        if grads is None:
+            return integrated_gradients(model, image, class_idx)
+        grads = grads[0]                                     # (h,w,c)
+        weights = tf.reduce_mean(grads, axis=(0, 1))         # (c,)
+        cam = tf.reduce_sum(conv_out[0] * weights, axis=-1)  # (h,w)
+        cam = tf.nn.relu(cam).numpy()
+        cam = _resize(cam, image.shape[:2])
+        return _norm01(cam)
+    except (ValueError, KeyError, TypeError, tf.errors.InvalidArgumentError):
+        return integrated_gradients(model, image, class_idx)
 
 
 def integrated_gradients(model, image, class_idx, steps=32):
