@@ -75,7 +75,13 @@ def _audit_images(per_class=300):
     ds = make_dataset(adf, batch_size=32, training=False, shuffle=False)
     images = np.concatenate([b[0].numpy() for b in ds], axis=0)
     y_true = np.array([CLASS_TO_IDX[c] for c in adf["disease"]])[:len(images)]
-    masks = _load_masks(adf["mask_path"].tolist(), images.shape[1:3])[:len(images)]
+    # mask_path may be absent if an OLD manifest (pre-mask-column) is loaded -> degrade to oval fallback
+    if "mask_path" in adf.columns:
+        masks = _load_masks(adf["mask_path"].tolist(), images.shape[1:3])[:len(images)]
+    else:
+        print("[audit] WARNING: manifest has no 'mask_path' column -> using oval-prior fallback "
+              "(re-upload the new manifest.csv to Drive for REAL lung masks)", flush=True)
+        masks = [None] * len(images)
     return images, y_true, masks
 
 
