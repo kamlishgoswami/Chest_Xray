@@ -142,3 +142,25 @@ def causal_effect(model, images, y_true, channel, masks=None, n_boot=1000, seed=
 def run_audit(model, images, y_true, masks=None, channels=ALL_CHANNELS):
     """Full per-model audit over all channels (shortcut + controls). Returns {channel: result}."""
     return {ch: causal_effect(model, images, y_true, ch, masks) for ch in channels}
+
+
+def pathology_preservation_check(model, images, y_true, masks=None, n_boot=500):
+    """§4.3d — verify shortcut interventions PRESERVE in-lung pathology signal.
+
+    A valid shortcut intervention should change predictions only via the nuisance channel, NOT by
+    destroying disease evidence. We quantify this as: the inside_lung (positive control) effect
+    should be LARGER than every shortcut-channel effect — i.e. removing real pathology hurts the
+    prediction MORE than removing a shortcut. If a shortcut effect exceeds inside_lung, that channel
+    may be co-removing pathology (a confound to flag), not just a shortcut.
+
+    Returns per-channel {effect, exceeds_inside_lung: bool} and an overall `preserved` flag.
+    """
+    inside = causal_effect(model, images, y_true, "inside_lung", masks, n_boot=n_boot)["effect"]
+    out = {"inside_lung_effect": float(inside), "channels": {}, "preserved": True}
+    for ch in SHORTCUT_CHANNELS:
+        eff = causal_effect(model, images, y_true, ch, masks, n_boot=n_boot)["effect"]
+        exceeds = eff > inside
+        out["channels"][ch] = {"effect": float(eff), "exceeds_inside_lung": bool(exceeds)}
+        if exceeds:
+            out["preserved"] = False     # this channel removes more signal than real pathology -> flag
+    return out

@@ -86,7 +86,11 @@ def stage_audit(models, per_class):
         audit = {ch: csa.causal_effect(model, images, y_true, ch, masks=masks, n_boot=1000)
                  for ch in csa.ALL_CHANNELS}
         cert = emit_certificate(m, audit, ROOT / "results" / m / "certificate.json")
-        print(f"[audit] {m}: SRC={cert['src']:.3f} valid={cert['valid']}", flush=True)
+        # §4.3d pathology-preservation spot check
+        pp = csa.pathology_preservation_check(model, images, y_true, masks=masks, n_boot=300)
+        (ROOT / "results" / m / "pathology_preservation.json").write_text(json.dumps(pp, indent=2))
+        print(f"[audit] {m}: SRC={cert['src']:.3f} valid={cert['valid']} "
+              f"pathology_preserved={pp['preserved']}", flush=True)
 
 
 def stage_xai(models, per_class):
@@ -217,6 +221,11 @@ def main():
         from src.shortcut import cross_domain
         cross_domain.run_cross_source_matrix(models=models, batch_size=args.batch_size)
         cross_domain.couple_src_to_collapse()
+        # §4.6 hardening analyses (reuse existing artifacts; degrade gracefully if too few models)
+        cross_domain.src_vs_baselines()
+        cross_domain.lomo_prediction()
+        cross_domain.partial_correlation()
+        cross_domain.confounder_separation()
     if "xai" in stages:
         done += 1; _banner("xai (Grad-CAM / IG faithfulness + in-lung)", done, total)
         stage_xai(models, args.per_class)

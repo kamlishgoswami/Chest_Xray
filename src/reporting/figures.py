@@ -148,6 +148,86 @@ def table_src(results_dir, out):
     Path(out).write_text("\n".join(lines)); return True
 
 
+def table_baselines_lomo(results_dir, out):
+    """Table E — SRC vs baseline predictors (R²) + LOMO out-of-sample R², as LaTeX."""
+    rd = Path(results_dir)
+    base = _load(rd / "src_vs_baselines.json"); lomo = _load(rd / "lomo.json")
+    if not base:
+        print("[tableE] no src_vs_baselines.json; skipped"); return False
+    deps = ["delta_acc", "delta_ece", "delta_ece_post_ts"]
+    preds = ["SRC", "in_domain_acc", "in_domain_ece", "out_of_lung_fraction"]
+    lines = [r"\begin{tabular}{l" + "c" * len(deps) + "}", r"\hline",
+             "Predictor & " + " & ".join(d.replace("_", "-") for d in deps) + r" \\", r"\hline"]
+    for p in preds:
+        cells = []
+        for d in deps:
+            v = base["comparison"].get(d, {}).get(p, {})
+            cells.append(f"{v['r2']:.2f}" if "r2" in v else "--")
+        lines.append(f"{p.replace('_','-')} & " + " & ".join(cells) + r" \\")
+    if lomo:
+        lines.append(r"\hline")
+        cells = []
+        for d in deps:
+            v = lomo.get(d, {})
+            cells.append(f"{v['lomo_r2']:.2f}" if isinstance(v, dict) and "lomo_r2" in v else "--")
+        lines.append(r"LOMO (out-of-sample R$^2$) & " + " & ".join(cells) + r" \\")
+    lines += [r"\hline", r"\end{tabular}"]
+    Path(out).write_text("\n".join(lines)); return True
+
+
+def table_audit_crosssource(results_dir, out):
+    """Table A2 — per-model in-domain vs cross-source acc/ECE (+post-TS), as LaTeX."""
+    cs = _load(Path(results_dir) / "cross_source.json")
+    if not cs:
+        print("[tableA2] no cross_source.json; skipped"); return False
+    lines = [r"\begin{tabular}{lcccccc}", r"\hline",
+             r"Model & In-Acc & Cross-Acc & $\Delta$Acc & In-ECE & Cross-ECE & ECE(post-TS) \\", r"\hline"]
+    for r in cs:
+        lines.append(f"{r['model']} & {r['in_domain_acc']:.3f} & {r['cross_source_acc']:.3f} & "
+                     f"{r['delta_acc']:+.3f} & {r['in_domain_ece']:.3f} & {r['cross_source_ece']:.3f} & "
+                     f"{r.get('cross_source_ece_post_ts', float('nan')):.3f} \\\\")
+    lines += [r"\hline", r"\end{tabular}"]
+    Path(out).write_text("\n".join(lines)); return True
+
+
+def fig_failure_panel(results_dir, out):
+    """Fig 8 — curated qualitative panel (NOT all images): for the highest-SRC valid model show
+    in-domain image + cross-source image + CSA(border) intervention + sham intervention, so the
+    validity controls and a shortcut intervention are VISIBLE. Small grid, paper-ready."""
+    plt = _mpl(); import numpy as np
+    rd = Path(results_dir)
+    # pick the highest-SRC VALID model
+    best, best_src = None, -1
+    for m in _models(rd):
+        c = _load(rd / m / "certificate.json")
+        if c and c.get("valid") and c["src"] > best_src:
+            best, best_src = m, c["src"]
+    if best is None:
+        print("[fig8] no valid certificate; skipped"); return False
+    try:
+        import tensorflow as tf
+        from src.data.loaders import load_manifest, filter_rows, make_dataset, CLASS_TO_IDX
+        from src.shortcut import csa
+        model = tf.keras.models.load_model(rd / best / f"{best}_best.keras")
+        df = load_manifest()
+        ind = filter_rows(df, split="test", roles=["in_domain"]).head(1)
+        crs = filter_rows(df, roles=["cross_source"]).head(1)
+        def first_img(sub):
+            ds = make_dataset(sub, batch_size=1, training=False, shuffle=False)
+            for b in ds: return b[0].numpy()[0]
+        img_in = first_img(ind); img_cs = first_img(crs)
+        panels = [("in-domain", img_in), ("cross-source", img_cs),
+                  ("CSA: border", csa.intervene(img_cs, "border", None)),
+                  ("sham (no-op)", csa.intervene(img_cs, "sham", None))]
+        fig, axes = plt.subplots(1, 4, figsize=(13, 3.4))
+        for ax, (title, im) in zip(axes, panels):
+            ax.imshow(np.clip(im, 0, 1)); ax.set_title(title, fontsize=9); ax.axis("off")
+        fig.suptitle(f"Failure-case panel — model {best} (SRC={best_src:.2f})", fontsize=10)
+        fig.tight_layout(); fig.savefig(out, dpi=DPI); plt.close(fig); return True
+    except Exception as e:
+        print(f"[fig8] skipped: {type(e).__name__}: {e}"); return False
+
+
 # ----------------------------------------------------------------- orchestration
 
 def generate_all(results_dir=None):
@@ -160,7 +240,10 @@ def generate_all(results_dir=None):
         "fig3_src_bars":        fig_src_bars(rd, figs / "fig3_src_bars.png"),
         "fig4_coupling":        fig_coupling(rd, figs / "fig4_coupling.png"),
         "fig7_ssp_heatmap":     fig_ssp_heatmap(rd, figs / "fig7_ssp_heatmap.png"),
+        "fig8_failure_panel":   fig_failure_panel(rd, figs / "fig8_failure_panel.png"),
         "tableC_src":           table_src(rd, tabs / "table_c_src.tex"),
+        "tableE_baselines_lomo": table_baselines_lomo(rd, tabs / "table_e_baselines_lomo.tex"),
+        "tableA2_audit":        table_audit_crosssource(rd, tabs / "table_a2_audit.tex"),
     }
     (rd / "reporting_manifest.json").write_text(json.dumps(made, indent=2))
     print("[reporting] emitted:", {k: v for k, v in made.items() if v})

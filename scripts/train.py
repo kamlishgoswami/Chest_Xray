@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 # determinism BEFORE importing tensorflow (via the modules below)
 from src.utils.seeding import set_global_determinism  # noqa: E402
 
-set_global_determinism(42)
+set_global_determinism(42)   # default; overridden by --seed in main() for multi-seed runs (§4.6d)
 
 
 def load_cfg():
@@ -39,7 +39,12 @@ def main():
     p.add_argument("--resume", action="store_true", help="skip models with an existing checkpoint")
     p.add_argument("--backup-dir", default=None,
                    help="per-epoch BackupAndRestore dir (point at Google Drive for crash recovery)")
+    p.add_argument("--seed", type=int, default=42,
+                   help="training seed (§4.6d multi-seed). seed!=42 writes results/<model>_s<seed>/")
     args = p.parse_args()
+
+    if args.seed != 42:                       # re-seed for multi-seed runs (§4.6d)
+        set_global_determinism(args.seed)
 
     from src.data.loaders import load_manifest, filter_rows, make_dataset, labels_int
     from src.models.zoo import build_model
@@ -59,8 +64,9 @@ def main():
     cw = class_weights_from_labels(labels_int(train_df))
 
     total = len(args.models)
+    suffix = "" if args.seed == 42 else f"_s{args.seed}"   # keep default dirs unchanged
     for i, name in enumerate(args.models, 1):
-        out_dir = ROOT / "results" / name
+        out_dir = ROOT / "results" / f"{name}{suffix}"
         ckpt = out_dir / f"{name}_best.keras"
         done_marker = out_dir / f"{name}.done"       # written ONLY when training fully completes
         bdir = f"{args.backup_dir}/{name}" if args.backup_dir else None
