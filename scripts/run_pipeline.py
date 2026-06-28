@@ -69,7 +69,25 @@ def _audit_images(per_class=300):
     ds = make_dataset(adf, batch_size=32, training=False, shuffle=False)
     images = np.concatenate([b[0].numpy() for b in ds], axis=0)
     y_true = np.array([CLASS_TO_IDX[c] for c in adf["disease"]])[:len(images)]
-    return images, y_true, [None] * len(images)   # masks=None -> CSA geometric fallback
+    masks = _load_masks(adf["mask_path"].tolist(), images.shape[1:3])[:len(images)]
+    return images, y_true, masks
+
+
+def _load_masks(mask_paths, hw):
+    """Load + resize real lung masks to (H,W) float {0,1}; None where no mask ships (CSA falls
+    back to the oval prior). `mask_paths` is the manifest's mask_path column (relative or '')."""
+    import numpy as np, tensorflow as tf
+    out = []
+    for mp in mask_paths:
+        if not mp or (isinstance(mp, float) and mp != mp):   # '' or NaN -> no mask
+            out.append(None); continue
+        p = ROOT / mp
+        if not p.exists():
+            out.append(None); continue
+        m = tf.io.decode_image(tf.io.read_file(str(p)), channels=1, expand_animations=False)
+        m = tf.image.resize(m, hw, method="nearest").numpy()[..., 0]
+        out.append((m > 127).astype("float32"))             # binarize (masks are 0/255)
+    return out
 
 
 def stage_audit(models, per_class):

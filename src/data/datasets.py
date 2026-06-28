@@ -236,7 +236,27 @@ def discover_rows(registry: dict):
                 "source": source,
                 "role": role,
                 "patient_id": derive_patient_id(img),
+                "mask_path": _find_mask(img),   # real lung mask if one ships, else "" (CSA falls back)
             }
+
+
+def _find_mask(img: Path) -> str:
+    """Locate the paired lung mask for an image: a same-named file under a sibling
+    'masks' / 'lung masks' / 'ManualMask' folder. Returns '' if none (CSA uses oval fallback).
+
+    Layout examples:
+      .../<class>/images/covid_1.png        -> .../<class>/lung masks/covid_1.png   (COVID-QU-Ex)
+      .../<class>/images/COVID-1.png        -> .../<class>/masks/COVID-1.png        (COVID-Radiography)
+    """
+    parent = img.parent
+    if parent.name.lower() != "images":
+        return ""                            # masks live as a sibling of an 'images' folder
+    base = parent.parent
+    for mdir in ("lung masks", "masks", "lung_masks", "ManualMask"):
+        cand = base / mdir / img.name
+        if cand.exists():
+            return str(cand.relative_to(ROOT))
+    return ""
 
 
 def build_manifest(registry: dict, compute_phash: bool = True):
