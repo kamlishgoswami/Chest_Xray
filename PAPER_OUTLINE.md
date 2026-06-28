@@ -288,7 +288,7 @@ mixed-effects/hierarchical regression and per-class×source breakdown (over-engi
 
 ## 6. Datasets (verified against `configs/datasets.yaml`)
 
-**Final verified coverage (from the actual 72,681-row manifest — all 4 classes have cross-source):**
+**Final verified coverage (from the actual 52,550-row manifest — all 4 classes have cross-source):**
 
 | Disease | In-domain (n) | Cross-source (n) | Cross-source source(s) |
 |---|---|---|---|
@@ -347,7 +347,7 @@ entire payoff is the coupling. **De-risk it FIRST, not last:**
   but still note ΔAcc-prediction overlaps DABIS, so lead with the calibration novelty. **(iii) if neither** →
   fallback instrument paper. Do NOT hard-pivot the outline now; the n=3 preview is not enough to commit.
 
-**Current build state (verified — all code complete, incl. §4.6 hardening):** data ✅ | manifest ✅ (72,681 imgs; all 4 classes now have cross-source after adding RSNA + TB-Qatar) |
+**Current build state (verified — all code complete, incl. §4.6 hardening):** data ✅ | manifest ✅ (52,550 imgs; all 4 classes now have cross-source after adding RSNA + TB-Qatar) |
 P0–P9 core + hardening analyses all implemented ✅ (CSA, SRC, cross_domain/C3, baselines, LOMO, post-TS ECE,
 partial-corr, pathology-preservation, CSA-mask recovery, XAI, robustness, abstention, stats, reporting,
 orchestrator, `--seed`) | Stage-3 local end-to-end test PASSED, every artifact on disk |

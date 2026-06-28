@@ -49,12 +49,33 @@ MASK_DIR_NAMES = {"mask", "masks", "manualmask", "manualmasks",
 # junk / duplicate-nesting dir markers to skip during discovery
 SKIP_DIR_MARKERS = ("__macosx",)
 
+# COVID-QU-Ex ships the SAME images twice: 'Lung Segmentation Data' (complete canonical set,
+# 11,956 COVID — matches the official count, AND ships lung masks we need) and
+# 'Infection Segmentation Data' (a redundant 2,913-image subset for a task we don't use).
+# Ingesting both double-counts. Keep ONLY Lung Segmentation Data.
+SKIP_PATH_SUBSTRINGS = ("infection segmentation data",)
 
-def normalize_class(folder_name: str) -> str | None:
-    """Map a raw folder/label string to a canonical class, or None if not a target class."""
+
+class _Excluded:
+    """Sentinel: this path component is an EXPLICITLY excluded class (e.g. Lung_Opacity).
+    Distinct from None (= 'not a class name') so the discovery loop STOPS and drops the image
+    instead of walking further up the path and matching a parent dataset folder by substring."""
+
+
+EXCLUDED = _Excluded()
+
+
+def normalize_class(folder_name: str):
+    """Map a raw folder/label to a canonical class, EXCLUDED sentinel, or None.
+
+    - EXCLUDED -> this component names a class we deliberately drop (lung_opacity, non-covid).
+                  The caller must DROP the image, not keep searching parent folders.
+    - canonical str -> a target class.
+    - None -> this component is not a class name (keep searching other path components).
+    """
     s = folder_name.strip().lower()
     if any(x in s for x in CLASS_EXCLUDE):
-        return None
+        return EXCLUDED
     for alias, canon in CLASS_ALIASES.items():
         if alias in s:
             return canon
@@ -163,6 +184,10 @@ def discover_rows(registry: dict):
             # skip macOS junk and other non-data dirs
             if any(s in p for p in parts_lower for s in SKIP_DIR_MARKERS):
                 continue
+            # skip redundant duplicate sub-datasets (e.g. COVID-QU-Ex Infection Segmentation Data)
+            path_lower = "/".join(parts_lower)
+            if any(s in path_lower for s in SKIP_PATH_SUBSTRINGS):
+                continue
             # skip segmentation masks: a path COMPONENT is exactly a mask folder name
             if any(p in MASK_DIR_NAMES for p in parts_lower):
                 continue
@@ -188,10 +213,18 @@ def discover_rows(registry: dict):
                     continue
                 source, role, disease = resolved
             else:
+                # Walk path components from the FILE up. Stop at the first that is either a
+                # class OR an explicit exclusion. Critically: an EXCLUDED component (e.g.
+                # 'Lung_Opacity') DROPS the image — we must NOT keep walking up and match a
+                # parent dataset folder by substring (e.g. 'COVID-19_Radiography_Dataset').
                 disease = None
                 for part in reversed(img.parts):
-                    disease = normalize_class(part)
-                    if disease:
+                    res = normalize_class(part)
+                    if res is EXCLUDED:
+                        disease = None
+                        break               # excluded class -> drop, do not search higher
+                    if res is not None:
+                        disease = res
                         break
                 if disease is None or disease not in d["provides"]:
                     continue
