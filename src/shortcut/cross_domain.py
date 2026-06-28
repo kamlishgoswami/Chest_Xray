@@ -29,6 +29,12 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def _zoo_load(ckpt):
+    """Load a checkpoint via the zoo loader (registers ViT custom layers first)."""
+    from src.models.zoo import load_model as _lm
+    return _lm(str(ckpt))
+
+
 def _predict(model, df, batch_size=32):
     """Return (y_true, y_prob) for a manifest subset, or (None, None) if empty."""
     from src.data.loaders import make_dataset, CLASS_TO_IDX
@@ -116,7 +122,7 @@ def run_cross_source_matrix(models=None, batch_size=32, results_dir=None):
             print(f"[skip] {name}: no checkpoint")
             continue
         print(f"=== cross-source: {name} ===")
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
 
         indom = _metrics_on(model, indom_df, batch_size)
         cross = _metrics_on(model, cross_df, batch_size)
@@ -381,7 +387,7 @@ def csa_mask_recovery(models=None, batch_size=32, per_class=200, results_dir=Non
         ckpt = mdir / f"{name}_best.keras"
         if not ckpt.exists():
             continue
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         raw_acc = float((model.predict(images, verbose=0).argmax(1) == y_true).mean())
         rec = {"cross_source_acc_raw": raw_acc, "per_channel_recovery": {}}
         for ch in csa.SHORTCUT_CHANNELS:

@@ -36,6 +36,12 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+
+def _zoo_load(ckpt):
+    """Load a checkpoint via the zoo loader (registers ViT custom layers first)."""
+    from src.models.zoo import load_model as _lm
+    return _lm(str(ckpt))
+
 ALL_STAGES = ["train", "eval", "audit", "cross", "xai", "robust", "abstain", "stats", "report"]
 
 
@@ -100,7 +106,7 @@ def stage_audit(models, per_class):
         if not ckpt.exists():
             print(f"[audit] no checkpoint {m}; skip", flush=True); continue
         print(f"[audit] ({i}/{len(models)}) {m} ...", flush=True)
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         audit = {ch: csa.causal_effect(model, images, y_true, ch, masks=masks, n_boot=1000)
                  for ch in csa.ALL_CHANNELS}
         cert = emit_certificate(m, audit, ROOT / "results" / m / "certificate.json")
@@ -122,7 +128,7 @@ def stage_xai(models, per_class):
             print(f"[xai] no checkpoint {m}; skip", flush=True); continue
         print(f"[xai] ({mi}/{len(models)}) {m}: {n_img} images × {len(explain.SALIENCY_METHODS)} methods ...",
               flush=True)
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         agg = {meth: {"deletion_auc": [], "insertion_auc": [], "in_lung": []}
                for meth in explain.SALIENCY_METHODS}
         for j, (img, y, mask) in enumerate(zip(images, y_true, masks), 1):
@@ -148,7 +154,7 @@ def stage_robust(models, per_class):
         ckpt = ROOT / "results" / m / f"{m}_best.keras"
         if not ckpt.exists():
             print(f"[robust] no checkpoint {m}; skip"); continue
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         print(f"[robust] {m}: 7 perturbation families ...", flush=True)
         res = perturbations.evaluate_robustness(model, images, y_true)
         (ROOT / "results" / m / "robustness.json").write_text(json.dumps(res, indent=2))
@@ -167,7 +173,7 @@ def stage_abstain(models):
         ckpt = ROOT / "results" / m / f"{m}_best.keras"
         if not ckpt.exists():
             print(f"[abstain] no checkpoint {m}; skip"); continue
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         y_prob = model.predict(ds, verbose=0)
         curve = accuracy_coverage_curve(y_true[:len(y_prob)], y_prob)
         curve["coverage_at_95"] = coverage_at_target_accuracy(curve, 0.95)
@@ -188,7 +194,7 @@ def stage_stats(models):
         ckpt = ROOT / "results" / m / f"{m}_best.keras"
         if not ckpt.exists():
             continue
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         pred = model.predict(ds, verbose=0).argmax(1)
         correct[m] = (pred == y_true[:len(pred)]).astype(int)
     stats = cross_model_stats(correct)

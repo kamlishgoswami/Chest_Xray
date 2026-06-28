@@ -18,6 +18,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+
+def _zoo_load(ckpt):
+    """Load a checkpoint via the zoo loader (registers ViT custom layers first)."""
+    from src.models.zoo import load_model as _lm
+    return _lm(str(ckpt))
+
 from src.utils.seeding import set_global_determinism  # noqa: E402
 
 set_global_determinism(42)
@@ -51,7 +57,7 @@ def main():
             print(f"[skip] {name}: no checkpoint")
             continue
         print(f"=== evaluating {name} ===")
-        model = tf.keras.models.load_model(ckpt)
+        model = _zoo_load(ckpt)
         y_prob = model.predict(test_ds, verbose=0)
 
         metrics = {**standard_metrics(y_true, y_prob), **calibration_metrics(y_true, y_prob)}

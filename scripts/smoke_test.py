@@ -26,6 +26,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+
+def _zoo_load(ckpt):
+    """Load a checkpoint via the zoo loader (registers ViT custom layers first)."""
+    from src.models.zoo import load_model as _lm
+    return _lm(str(ckpt))
+
 MANIFEST = ROOT / "data" / "manifest.csv"
 BACKUP = ROOT / "data" / "manifest.full.bak.csv"
 
@@ -99,7 +105,7 @@ def main():
             if not ckpt.exists():
                 print(f"[smoke] WARN: no checkpoint for {name}, skipping audit")
                 continue
-            model = tf.keras.models.load_model(ckpt)
+            model = _zoo_load(ckpt)
             # small n_boot for speed; masks=None -> CSA uses geometric fallbacks
             audit = {ch: csa.causal_effect(model, images, y_true, ch, masks=None, n_boot=50)
                      for ch in csa.ALL_CHANNELS}

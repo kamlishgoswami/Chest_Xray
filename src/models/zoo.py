@@ -33,11 +33,25 @@ CUSTOM_MODELS = {"lenet5", "vit"}
 MODEL_NAMES = list(BACKBONES) + ["vit", "lenet5"]
 
 
+_VIT_LAYERS = None  # cache so the registered classes are defined exactly once
+
+
 def _make_vit_layers():
-    """Lazily define ViT custom layers (needs TF at call time, not import time)."""
+    """Define + REGISTER ViT custom layers (needs TF at call time, not import time).
+
+    The layers are registered with @register_keras_serializable and given proper get_config so a
+    saved ViT can be RELOADED with tf.keras.models.load_model. They are cached module-level so the
+    same registered classes are reused (re-registering identical names would warn/error).
+    """
+    global _VIT_LAYERS
+    if _VIT_LAYERS is not None:
+        return _VIT_LAYERS
+
     import tensorflow as tf
     from tensorflow.keras import layers
+    from tensorflow.keras.saving import register_keras_serializable
 
+    @register_keras_serializable(package="cxr_zoo")
     class ClassToken(layers.Layer):
         """Learnable CLS token, broadcast to the batch."""
 
@@ -49,6 +63,7 @@ def _make_vit_layers():
             b = tf.shape(x)[0]
             return tf.broadcast_to(self.cls, (b, 1, tf.shape(x)[-1]))
 
+    @register_keras_serializable(package="cxr_zoo")
     class AddPositionalEmbedding(layers.Layer):
         """Learnable positional embedding added to the token sequence."""
 
@@ -64,7 +79,24 @@ def _make_vit_layers():
         def call(self, x):
             return x + self.pos
 
-    return ClassToken, AddPositionalEmbedding
+        def get_config(self):
+            # MUST serialize the constructor args so the layer can be rebuilt on load
+            return {**super().get_config(), "n_tokens": self.n_tokens, "dim": self.dim}
+
+    _VIT_LAYERS = (ClassToken, AddPositionalEmbedding)
+    return _VIT_LAYERS
+
+
+def load_model(ckpt_path):
+    """Load a saved model, ensuring the ViT custom layers are REGISTERED first.
+
+    Every load_model call site must use THIS instead of tf.keras.models.load_model directly, so a
+    saved ViT (which uses ClassToken / AddPositionalEmbedding) can be deserialized. For the 6
+    standard-layer models it behaves identically to the plain loader.
+    """
+    import tensorflow as tf
+    _make_vit_layers()                      # registers the custom layers (idempotent, cached)
+    return tf.keras.models.load_model(ckpt_path)
 
 
 def _classification_head(x, num_classes, name="head"):

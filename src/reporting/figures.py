@@ -15,6 +15,12 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _zoo_load(ckpt):
+    """Load a checkpoint via the zoo loader (registers ViT custom layers first)."""
+    from src.models.zoo import load_model as _lm
+    return _lm(str(ckpt))
 DPI = 300
 
 
@@ -208,7 +214,7 @@ def fig_failure_panel(results_dir, out):
         import tensorflow as tf
         from src.data.loaders import load_manifest, filter_rows, make_dataset, CLASS_TO_IDX
         from src.shortcut import csa
-        model = tf.keras.models.load_model(rd / best / f"{best}_best.keras")
+        model = _zoo_load(rd / best / f"{best}_best.keras")
         df = load_manifest()
         ind = filter_rows(df, split="test", roles=["in_domain"]).head(1)
         crs = filter_rows(df, roles=["cross_source"]).head(1)
