@@ -54,10 +54,19 @@ null-controlled counterfactual edits on CXR shortcuts. Do not present this ledge
 | **Spuriosity Rankings — NeurIPS 2023 (CV)** ✅READ                                       | Ranks within-class images by spuriosity via human-annotated neural features; bias = spurious gap (high/low-spuriosity acc) across 89 ImageNet models. App. B runs gray/blur/patch-rotate region interventions                                                                                                     | Natural per-class cues on ImageNet/Waterbirds/CelebA, not orthogonal nuisance channels; needs feature annotation; bias = in-distribution gap, not cross-source OOD; no calibration, no certificate                                                                                                                                           | arXiv 2212.02648 (**NeurIPS 2023**, not CVPR)                       |
 | **GroupDRO — ICLR 2020 (CV)** ✅READ                                                     | Worst-group-loss training; needs per-example group labels; works only with strong regularization in overparam. regime. Waterbirds/CelebA/MultiNLI                                                                                                                                                                 | Training-time*mitigation*, not an audit; needs annotated groups (we need none); no causal intervention, no sham, no certificate, no calibration, no cross-source eval                                                                                                                                                                      | arXiv 1911.08731                                                          |
 | **DeGrave, Janizek & Lee — Nat. Mach. Intell. 2021 (Q1) — CLOSEST CXR NEIGHBOR** ✅READ | Names CXR shortcut channels (markers, border radiopacity, positioning, AP/PA projection, sex) via Expected-Gradients + CycleGAN. Cross-source OOD shown (AUC 0.99→0.70–0.76). Runs**interventional edits WITH a random-patch null control** (Fig 3, single-image + population p-values). 10 architectures | Their edits are**manual, per-feature, single-image, qualitative** — not a systematic orthogonal-channel taxonomy with an inside-lung null and an automated metric; **no per-model certificate + validity gate**; **no calibration coupling** (AUC/log-odds only); reliance not distilled into a portable predictive score | https://doi.org/10.1038/s42256-021-00338-7                                |
+| **DABIS — Shortcut learning hinders generalization (npj Digital Medicine 2024, Q1) — 2nd-CLOSEST, MUST CITE** ✅READ (PMC) | **Per-model shortcut score (P_DABIS) that PREDICTS the cross-hospital ACCURACY drop WITHOUT external data**, via global signal-shuffling (permute pixels → model keeps only data-histogram bias). 13 datasets (X-ray/CT/ECG/text/audio); accuracy overestimated up to 20% by shortcuts; P_DABIS↔external-drop Spearman ρ=0.80 | **Predicts ACCURACY only — NOT calibration/ECE** (this is our headline gap over them); **global shuffling, NOT per-channel** — they state they "cannot differentiate" which shortcut; **no counterfactual intervention, no sham null, no per-channel decomposition**; single post-hoc correlation, not a regression/LOMO across a model suite | https://www.nature.com/articles/s41746-024-01118-4 · PMC11094145 |
 
-> **Honesty note:** all 6 rows are full-PDF verified. Rows once cited but never read were REMOVED
-> (CLIP Fairness Springer 2026, "Lung Attention Ratio", Maguolo & Nanni, DB-structure bias, ElRep, PDE) —
-> re-add only after reading. Gordaliza is a workshop preprint, not a Q1 journal.
+> **Honesty note:** all 7 rows are full-text verified (DABIS via open-access PMC). Rows once cited but never
+> read were REMOVED (CLIP Fairness Springer 2026, "Lung Attention Ratio", Maguolo & Nanni, DB-structure bias,
+> ElRep, PDE) — re-add only after reading. Gordaliza is a workshop preprint, not a Q1 journal.
+
+> **⚠️ DABIS guard (npj Dig Med 2024) — our 2nd-closest neighbor; the review found it, we MUST cite it.**
+> DABIS already does "per-model shortcut score → predicts cross-hospital *accuracy* drop, no external data."
+> So **do NOT claim accuracy-drop prediction as novel.** Our ONLY defensible deltas over DABIS: (a) we predict
+> **MISCALIBRATION (ΔECE)**, which they never touch; (b) **per-channel causal decomposition** (they shuffle
+> globally and "cannot differentiate" shortcuts); (c) **counterfactual intervention + sham null** (they use
+> shuffling, no causal control). Position DABIS beside DeGrave as the two papers to clear; lead the "predicts"
+> claim with **calibration**, not accuracy.
 
 > **Do NOT claim C3 (occlusion-reliance ↔ cross-dataset drop) as first-of-kind:** Haynes et al. (2024)
 > already show it correlationally (*SD_all*). Our delta = causal per-channel decomposition + certificate +
@@ -105,10 +114,16 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 
 ## 1. Working Title (candidates)
 
-1. **"A Counterfactual Shortcut Reliance Certificate that Predicts Cross-Domain Failure and Miscalibration
-   in Chest X-ray Classifiers"** *(recommended)*
-2. "Certifying What Chest X-ray Models Look At: Causal Per-Channel Shortcut Auditing for Reliable Deployment"
-3. "From 99% to a Certificate: Auditing Shortcut Reliance in High-Accuracy Chest-Radiography AI"
+> **Headline pivot (post-literature review + 3-model preliminary):** lead with **MISCALIBRATION**, not accuracy.
+> Why: (a) our real preliminary signal is strong on ΔECE (R²≈0.77) and flat on ΔAcc (R²≈0.02); (b) DABIS
+> (npj Dig Med 2024) already predicts the cross-source *accuracy* drop — so accuracy-prediction is NOT novel,
+> but **calibration-prediction is unoccupied** (DABIS is accuracy-only; DeGrave/FastDiME never touch ECE).
+> The defensible contribution is *causal, per-channel shortcut reliance predicting cross-source MISCALIBRATION*.
+
+1. **"A Counterfactual, Per-Channel Shortcut-Reliance Certificate that Predicts Cross-Source Miscalibration
+   in Chest X-ray Classifiers"** *(recommended — leads with the novel/strong result)*
+2. "Certifying What Chest X-ray Models Look At: Causal Per-Channel Shortcut Auditing for Calibrated Deployment"
+3. "Shortcuts Miscalibrate Before They Misclassify: A Causal Reliance Certificate for Chest-Radiography AI"
 
 ---
 
@@ -119,7 +134,7 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 - **C2 — SRC (method, TWIN-A):** auditable per-model certificate + per-channel breakdown + bootstrap CI +
   **validity gate** (sham must be null). *No read paper does this.*
 - **C3 — Predictive coupling (method, TWIN-A core):** SRC predicts cross-source ΔAcc AND ECE (regression,
-  R², CI). *The calibration link is unique among all 11 read papers.*
+  R², CI). *The calibration link is unique among all 12 read papers (incl. DABIS, which predicts accuracy only).*
 - **C4 — Applied benchmark audit (TWIN-B):** run CSA/SRC on 96–99%-style CXR classifiers (cf. B1–B6) on
   the canonical datasets; show the cross-source collapse + reliance they assert-away or never test.
 - **C5 — XAI corroboration + certificate-gated abstention (TWIN-A support):**
@@ -273,16 +288,21 @@ mixed-effects/hierarchical regression and per-class×source breakdown (over-engi
 
 ## 6. Datasets (verified against `configs/datasets.yaml`)
 
-| Disease      | In-domain source       | Cross-source test       | Masks                        | Kaggle slug (verify at download)                                         |
-| ------------ | ---------------------- | ----------------------- | ---------------------------- | ------------------------------------------------------------------------ |
-| COVID-19     | COVID19-Radiography-DB | COVID-QU-Ex             | Yes                          | tawsifurrahman/covid19-radiography-database → anasmohammedtahir/covidqu |
-| Normal       | COVID19-Radiography-DB | RSNA (optional, ~11 GB) | Partial                      | (above) → iamtapendu/rsna-pneumonia-processed-dataset                   |
-| Pneumonia    | Kermany-Pediatric      | RSNA Pneumonia          | U-Net (Kermany has none)     | paultimothymooney/chest-xray-pneumonia → RSNA                           |
-| Tuberculosis | Shenzhen               | Montgomery              | Yes (Montgomery ships masks) | kmader/pulmonary-chest-xray-abnormalities (split by folder in code)      |
+**Final verified coverage (from the actual 72,681-row manifest — all 4 classes have cross-source):**
 
+| Disease | In-domain (n) | Cross-source (n) | Cross-source source(s) |
+|---|---|---|---|
+| COVID-19 | COVID19-Radiography-DB (9,414) | 26,059 | COVID-QU-Ex |
+| Normal | COVID19-Radiography-DB (12,095) | 12,430 | RSNA (8,850) + TB-Qatar (3,500) + Montgomery (80) |
+| Pneumonia | Kermany-Pediatric (5,583) | **6,012** | RSNA *(was 0 — fixed by adding RSNA, "Not Normal" class excluded)* |
+| Tuberculosis | Shenzhen (336) | **751** | TB-Qatar (693) + Montgomery (58) *(was 58 — 13× larger; 2 independent external TB sets)* |
+
+**RSNA labeling:** filenames are UUIDs; labels read from `stage2_train_metadata.csv` (Normal→Normal,
+Lung Opacity→Pneumonia, "No Lung Opacity / Not Normal" EXCLUDED). Used the PNG-converted Kaggle mirror for
+pipeline consistency with the other pre-processed sources; **cite the official RSNA challenge as data origin.**
 Record license + version + access date (TRIPOD-AI/CLAIM). Masks define the CSA "background" channel.
-**Overlap with benchmarks:** COVID-QU-Ex + Shenzhen/Montgomery are the exact sources of B5 and B6 → direct
-"same data, we go further" comparison.
+**Overlap with benchmarks:** COVID-QU-Ex + Shenzhen/Montgomery + the Qatar TB DB are the exact sources of
+B5/B6 → direct "same data, we go further" comparison.
 
 ---
 
@@ -320,8 +340,14 @@ entire payoff is the coupling. **De-risk it FIRST, not last:**
 - Honest fallback if coupling is weak: the paper becomes "a validated shortcut-audit instrument + descriptive
   cross-source findings" (still publishable at a soundness venue), but the marquee claim must then be dropped.
   Decide the threshold for "coupling holds" (e.g. R² and CI) BEFORE looking at the result, to avoid p-hacking.
+- **Headline-pivot decision (DECIDE FROM THE 7-MODEL DATA, not the 3-model preview):** the title/C3 currently
+  claim BOTH ΔAcc and ΔECE. After the full run: **(i) if ΔECE is strong AND ΔAcc is flat** (the preliminary
+  pattern) → pivot the headline to **calibration** (title candidate #1/#3), demote ΔAcc to secondary — this is
+  also the DABIS-differentiated framing (§0a guard). **(ii) if BOTH couple** → keep "failure AND miscalibration"
+  but still note ΔAcc-prediction overlaps DABIS, so lead with the calibration novelty. **(iii) if neither** →
+  fallback instrument paper. Do NOT hard-pivot the outline now; the n=3 preview is not enough to commit.
 
-**Current build state (verified — all code complete, incl. §4.6 hardening):** data ✅ | manifest ✅ (53,625 imgs) |
+**Current build state (verified — all code complete, incl. §4.6 hardening):** data ✅ | manifest ✅ (72,681 imgs; all 4 classes now have cross-source after adding RSNA + TB-Qatar) |
 P0–P9 core + hardening analyses all implemented ✅ (CSA, SRC, cross_domain/C3, baselines, LOMO, post-TS ECE,
 partial-corr, pathology-preservation, CSA-mask recovery, XAI, robustness, abstention, stats, reporting,
 orchestrator, `--seed`) | Stage-3 local end-to-end test PASSED, every artifact on disk |
