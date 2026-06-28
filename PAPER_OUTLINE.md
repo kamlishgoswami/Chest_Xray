@@ -165,7 +165,9 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
   (b) Causal estimator: Δ class-prob per intervention vs control, aggregated per model, with CI.
   (c) **Validity controls:** sham (no-op) + inside-lung interventions → expect null. (d) Pathology-preservation
   spot check.
-- **4.4 SRC — C2.** Definition, per-channel decomposition, bootstrap CI, cross-model normalization, validity gate.
+- **4.4 SRC — C2.** Definition, per-channel decomposition, bootstrap CI, validity gate. SRC is an
+  **absolute per-model score** (mean per-channel effect) — deliberately NOT normalized across the model set,
+  so a model's certificate is an intrinsic property and does not change when other models are added/removed.
 - **4.5 Evaluation suite.** Standard metrics + calibration (ECE/Brier/NLL + temperature scaling) + robustness/SSP
   + quantitative XAI + selective prediction.
 - **4.5b XAI corroboration of SRC — C5.** Exactly **two** saliency methods from *different families* for
@@ -231,12 +233,19 @@ Fig 1* change. So we build once, then frame once.
 | P8 | Figures + LaTeX tables | `src/reporting/figures.py` ✅ | `results/figures/*.png`, `results/tables/*.tex` |
 | P9 | Stats (Friedman/McNemar/Holm) | `metrics.py` ✅ (extended) | `results/stats_summary.json` |
 
-**Build status (verified — all modules implemented, 0 `NotImplementedError`):** P0–P9 are real code and have
-been run **end-to-end on a tiny real subset** (Stage-3 local test passed: every artifact above was produced).
-Orchestrator `scripts/run_pipeline.py` ✅ chains P1→P9 with `--models`/`--stages`, with live streamed progress;
-the local smoke test and both Colab notebooks (`colab_small.ipynb`, `colab_full.ipynb`) call this SAME entrypoint
-(one codebase, three configs). **What remains is not coding but EXECUTION on Colab** (real training → real
-numbers). All results are still **[PLANNED]** until the Colab runs complete (only lenet5 has a real checkpoint).
+**Build status (verified — ALL code implemented, incl. the §4.6 reviewer-hardening analyses; 0 `NotImplementedError`):**
+P0–P9 core **and** the hardening layer are real code, run **end-to-end on a tiny real subset** (every artifact
+produced on disk). Hardening modules now built: §4.6a baselines (`src_vs_baselines.json`), §4.6b LOMO
+(`lomo.json`), §4.6c post-TS cross-source ECE (in `cross_source.json`), §4.6 partial correlation
+(`partial_correlation.json`), §4.6d `--seed` (capability; seeds RUN only after a 7-model GO), §4.3d
+pathology-preservation (`pathology_preservation.json`), §4.7 CSA-mask recovery (`csa_mask_recovery.json`),
+Fig 8 failure panel, Table A2/E. **Deliberately NOT built:** §4.4 cross-model SRC normalization (would break
+the per-model certificate; SRC is absolute by design).
+Orchestrator `scripts/run_pipeline.py` ✅ chains all stages with `--models`/`--stages` + live progress;
+the local smoke test and both Colab notebooks call this SAME entrypoint. **What remains is EXECUTION on Colab**
+(real training → real numbers), not coding. All results stay **[PLANNED]** until the Colab runs complete.
+> *Note: LOMO + partial correlation need ≥4 models to yield numbers; with <4 they return an explicit
+> "need ≥4" note (not a fabricated value). They populate at the full 7-model run.*
 
 **Component scope (locked — no scope creep):** 7 models · 4 classes · 3 shortcut channels + 2 controls ·
 2 XAI methods (Grad-CAM + Integrated Gradients) · 7 SSP perturbations · the figures/tables in §7 ONLY.
@@ -312,10 +321,14 @@ entire payoff is the coupling. **De-risk it FIRST, not last:**
   cross-source findings" (still publishable at a soundness venue), but the marquee claim must then be dropped.
   Decide the threshold for "coupling holds" (e.g. R² and CI) BEFORE looking at the result, to avoid p-hacking.
 
-**Current build state (verified — all code complete):** data ✅ | manifest ✅ (53,625 imgs) |
-P0–P9 all implemented ✅ (CSA, SRC, cross_domain/C3, XAI, robustness, abstention, stats, reporting,
-orchestrator) | Stage-3 local end-to-end test PASSED | **models: 1/7 trained (lenet5 smoke checkpoint only)**.
-The remaining risk is therefore purely the **scientific outcome of C3 on real Colab runs**, not any missing code.
+**Current build state (verified — all code complete, incl. §4.6 hardening):** data ✅ | manifest ✅ (53,625 imgs) |
+P0–P9 core + hardening analyses all implemented ✅ (CSA, SRC, cross_domain/C3, baselines, LOMO, post-TS ECE,
+partial-corr, pathology-preservation, CSA-mask recovery, XAI, robustness, abstention, stats, reporting,
+orchestrator, `--seed`) | Stage-3 local end-to-end test PASSED, every artifact on disk |
+**models: 1/7 trained (lenet5 smoke checkpoint only)**.
+**First real Colab run (3 models, 12 epochs) produced a preliminary C3 signal: SRC→ΔECE R²≈0.77 (strong),
+SRC→ΔAcc R²≈0.02 (flat) — encouraging but n=3 with one degenerate point; NOT conclusive.** The remaining risk
+is purely the **scientific outcome of C3 at the full 7-model run**, not any missing code.
 
 ---
 
