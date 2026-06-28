@@ -65,7 +65,12 @@ def derive_patient_id(path: Path) -> str | None:
     """Best-effort patient id from filename (e.g. 'person12_...', 'CHNCXR_0001_...')."""
     name = path.stem
     m = re.search(r"(person\d+|patient\d+|CHNCXR_\d+|MCUCXR_\d+)", name, re.IGNORECASE)
-    return m.group(1).lower() if m else None
+    if m:
+        return m.group(1).lower()
+    # RSNA filenames are bare UUIDs and are 1-image-per-patient -> the UUID IS the patient id
+    if "RSNA" in path.parts:
+        return name.lower()
+    return None
 
 
 def perceptual_hash(path: Path):
@@ -105,6 +110,44 @@ def _resolve_tb_bundle(img: Path):
     return source, role, disease
 
 
+# RSNA: labels live in stage2_train_metadata.csv (filenames are UUIDs), NOT in folders.
+# 3 classes -> we map: 'Normal'->Normal, 'Lung Opacity'->Pneumonia, and DROP
+# 'No Lung Opacity / Not Normal' (abnormal-but-not-pneumonia -> would be label noise).
+_RSNA_LABELS = None  # lazy-loaded {patientId: disease-or-None}
+
+
+def _load_rsna_labels():
+    global _RSNA_LABELS
+    if _RSNA_LABELS is None:
+        import csv
+        _RSNA_LABELS = {}
+        csv_path = RAW / "RSNA" / "stage2_train_metadata.csv"
+        if csv_path.exists():
+            for r in csv.DictReader(open(csv_path)):
+                cls = r.get("class", "").strip()
+                if cls == "Normal":
+                    _RSNA_LABELS[r["patientId"]] = "Normal"
+                elif cls == "Lung Opacity":
+                    _RSNA_LABELS[r["patientId"]] = "Pneumonia"
+                # 'No Lung Opacity / Not Normal' -> intentionally NOT added (excluded)
+    return _RSNA_LABELS
+
+
+def _resolve_rsna(img: Path):
+    """RSNA Training/Images/<patientId>.png -> (source, role, disease) via the CSV.
+
+    Returns None for: the unlabeled Test/ set, mask files, and the excluded 'Not Normal' class.
+    """
+    # only label the Training/Images set; Test/ has no public labels -> skip
+    if "Test" in img.parts:
+        return None
+    labels = _load_rsna_labels()
+    disease = labels.get(img.stem)        # filename stem == patientId UUID
+    if disease is None:
+        return None                        # excluded class or not in label map
+    return "RSNA", "cross_source", disease
+
+
 def discover_rows(registry: dict):
     """Walk data/raw/<source>/ for each registered dataset, yielding row dicts (no split yet)."""
     for d in registry["datasets"].values():
@@ -112,6 +155,7 @@ def discover_rows(registry: dict):
         if not source_dir.exists():
             continue
         is_tb_bundle = d["source"] == "Shenzhen+Montgomery"
+        is_rsna = d["source"] == "RSNA"
         for img in source_dir.rglob("*"):
             if img.suffix.lower() not in IMG_EXTS:
                 continue
@@ -132,6 +176,14 @@ def discover_rows(registry: dict):
             # filename (CHNCXR_/MCUCXR_ + trailing _0/_1). Other datasets use class folders.
             if is_tb_bundle:
                 resolved = _resolve_tb_bundle(img)
+                if resolved is None:
+                    continue
+                source, role, disease = resolved
+            elif is_rsna:
+                # RSNA Masks/ are segmentation files (same UUID as images) -> skip via path
+                if "Masks" in img.parts:
+                    continue
+                resolved = _resolve_rsna(img)
                 if resolved is None:
                     continue
                 source, role, disease = resolved

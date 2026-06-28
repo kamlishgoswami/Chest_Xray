@@ -19,7 +19,7 @@ statsmodels>=0.13.0
 tqdm>=4.62.0
 
 # Phase 0 — data acquisition + leakage control
-kaggle>=1.6.0
+kaggle==1.6.17
 PyYAML>=6.0
 imagehash>=4.3.0    # perceptual-hash dedup
 

@@ -67,3 +67,15 @@ datasets:
     source: "Shenzhen+Montgomery"                            # placeholder; manifest re-labels by folder
     masks: true                                              # Montgomery ships lung masks
     license: "U.S. NLM public; research use (Jaeger et al. 2014)"
+
+  # TB Qatar/Dhaka DB (Rahman et al.) — 700 TB / 3500 Normal, 512x512. 2nd TB CROSS-SOURCE
+  # set (12x larger than Montgomery's 58 TB), and the EXACT dataset benchmark paper B5 used.
+  # Same Qatar team as covid_radiography -> consistent provenance. Folders: TB/ and Normal/.
+  tb_qatar:
+    kaggle: "tawsifurrahman/tuberculosis-tb-chest-xray-dataset"   # verified 2026-06 (web): 700 TB / 3500 Normal
+    role: cross_source
+    provides: [TB, Normal]
+    source: "TB-Qatar"
+    masks: false
+    license: "see Kaggle page; research use (Rahman et al. 2020)"
+    optional: true                                          # ~700 MB; download with --only tb_qatar
