@@ -51,7 +51,10 @@ def _make_vit_layers():
     from tensorflow.keras import layers
     from tensorflow.keras.saving import register_keras_serializable
 
-    @register_keras_serializable(package="cxr_zoo")
+    # NOTE: register WITHOUT a package prefix so the registered name is exactly 'ClassToken' /
+    # 'AddPositionalEmbedding' — matching how the ALREADY-SAVED ViT checkpoints recorded them
+    # (a package= prefix would make the name 'cxr_zoo>ClassToken' and fail to match old files).
+    @register_keras_serializable()
     class ClassToken(layers.Layer):
         """Learnable CLS token, broadcast to the batch."""
 
@@ -63,7 +66,7 @@ def _make_vit_layers():
             b = tf.shape(x)[0]
             return tf.broadcast_to(self.cls, (b, 1, tf.shape(x)[-1]))
 
-    @register_keras_serializable(package="cxr_zoo")
+    @register_keras_serializable()
     class AddPositionalEmbedding(layers.Layer):
         """Learnable positional embedding added to the token sequence."""
 
@@ -88,15 +91,17 @@ def _make_vit_layers():
 
 
 def load_model(ckpt_path):
-    """Load a saved model, ensuring the ViT custom layers are REGISTERED first.
+    """Load a saved model, ensuring the ViT custom layers are available.
 
-    Every load_model call site must use THIS instead of tf.keras.models.load_model directly, so a
-    saved ViT (which uses ClassToken / AddPositionalEmbedding) can be deserialized. For the 6
-    standard-layer models it behaves identically to the plain loader.
+    Belt-and-suspenders so EXISTING checkpoints (saved before the registration fix) still load:
+      1) _make_vit_layers() registers the classes under their bare names, AND
+      2) we pass them via custom_objects explicitly (bypasses name-registry lookup entirely).
+    For the 6 standard-layer models this is a harmless no-op identical to the plain loader.
     """
     import tensorflow as tf
-    _make_vit_layers()                      # registers the custom layers (idempotent, cached)
-    return tf.keras.models.load_model(ckpt_path)
+    ClassToken, AddPositionalEmbedding = _make_vit_layers()
+    custom = {"ClassToken": ClassToken, "AddPositionalEmbedding": AddPositionalEmbedding}
+    return tf.keras.models.load_model(ckpt_path, custom_objects=custom, compile=False)
 
 
 def _classification_head(x, num_classes, name="head"):
