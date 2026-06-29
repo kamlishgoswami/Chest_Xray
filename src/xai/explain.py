@@ -108,22 +108,31 @@ def grad_cam(model, image, class_idx, layer_name=None):
         return integrated_gradients(model, image, class_idx)
 
 
-def integrated_gradients(model, image, class_idx, steps=32):
-    """Integrated Gradients attribution magnitude (H,W) in [0,1]."""
+def integrated_gradients(model, image, class_idx, steps=32, micro_batch=8):
+    """Integrated Gradients attribution magnitude (H,W) in [0,1].
+
+    Steps are processed in MICRO-BATCHES (default 8) so peak GPU memory stays bounded — pushing
+    all 32 interpolation steps through a large backbone at once OOMs a T4 (the activation tensor
+    for e.g. (32,224,224,3) through DenseNet/EfficientNet is large). Accumulate gradients instead.
+    """
     import tensorflow as tf
 
     img = image.astype("float32")
     baseline = np.full_like(img, BASELINE)
     alphas = np.linspace(0, 1, steps).astype("float32")
-    interp = np.stack([baseline + a * (img - baseline) for a in alphas])  # (steps,H,W,3)
-    x = tf.convert_to_tensor(interp)
-    with tf.GradientTape() as tape:
-        tape.watch(x)
-        preds = model(x)
-        loss = preds[:, class_idx]
-    grads = tape.gradient(loss, x).numpy()               # (steps,H,W,3)
-    avg_grads = grads.mean(axis=0)                       # (H,W,3)
-    ig = (img - baseline) * avg_grads                    # (H,W,3)
+    grad_sum = np.zeros_like(img)                        # (H,W,3) running mean of gradients
+    for i in range(0, steps, micro_batch):
+        chunk = alphas[i:i + micro_batch]
+        interp = np.stack([baseline + a * (img - baseline) for a in chunk])  # (b,H,W,3)
+        x = tf.convert_to_tensor(interp)
+        with tf.GradientTape() as tape:
+            tape.watch(x)
+            preds = model(x, training=False)
+            loss = preds[:, class_idx]
+        g = tape.gradient(loss, x).numpy()               # (b,H,W,3)
+        grad_sum += g.sum(axis=0)
+    avg_grads = grad_sum / steps                         # (H,W,3)
+    ig = (img - baseline) * avg_grads
     sal = np.abs(ig).sum(axis=-1)                        # (H,W)
     return _norm01(sal)
 
