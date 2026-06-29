@@ -238,40 +238,83 @@ def _baseline_predictors(results_dir):
     return preds
 
 
-def src_vs_baselines(results_dir=None):
-    """§4.6a — head-to-head R^2: does SRC predict collapse BETTER than trivial predictors?
+def _load_cert_field(models, results_dir, field):
+    """Read an arbitrary scalar field from each model's certificate.json. Returns {model: value}."""
+    out = {}
+    for mdir in models:
+        cert = Path(mdir) / "certificate.json"
+        if cert.exists():
+            out[Path(mdir).name] = json.loads(cert.read_text()).get(field)
+    return out
 
-    For each dependent (delta_acc, delta_ece, delta_ece_post_ts) regress it on SRC and on each
-    baseline (in-domain acc, in-domain ECE, out-of-lung saliency fraction), reporting R^2 for all.
-    Establishes that SRC adds predictive value beyond freely-available alternatives.
+
+def _partial_r(y, x, ctrl):
+    """Partial correlation of x,y controlling for ctrl (residualization). NaN-safe."""
+    ok = ~(np.isnan(x) | np.isnan(y) | np.isnan(ctrl))
+    if ok.sum() < 4:
+        return float("nan")
+    x, y, ctrl = x[ok], y[ok], ctrl[ok]
+
+    def _res(a, b):
+        if np.allclose(b.std(), 0):
+            return a - a.mean()
+        s, i = np.polyfit(b, a, 1)
+        return a - (s * b + i)
+    rx, ry = _res(x, ctrl), _res(y, ctrl)
+    if np.allclose(rx.std(), 0) or np.allclose(ry.std(), 0):
+        return float("nan")
+    return float(np.corrcoef(rx, ry)[0, 1])
+
+
+def src_vs_baselines(results_dir=None):
+    """§4.6a — head-to-head: does the NORMALIZED SRC predict collapse BETTER than (a) trivial
+    predictors AND (b) the naive raw-mean SRC — and crucially does it add signal INDEPENDENT of
+    model accuracy?
+
+    Reports per dependent: R^2 for SRC (normalized), src_raw_mean (the naive baseline we beat),
+    in-domain acc/ECE, out-of-lung fraction; PLUS the partial-r of each predictor controlling for
+    in-domain accuracy. The partial-r|accuracy column is the key reviewer-defense: it shows the
+    normalized SRC is not merely an accuracy proxy (the raw mean is).
     """
     results_dir = Path(results_dir) if results_dir else (ROOT / "results")
     cs = json.loads((results_dir / "cross_source.json").read_text())
-    cert_src = _load_src_scores([results_dir / r["model"] for r in cs], results_dir)
+    mdirs = [results_dir / r["model"] for r in cs]
+    cert_src = _load_src_scores(mdirs, results_dir)                       # normalized SRC ("src")
+    cert_raw = _load_cert_field(mdirs, results_dir, "src_raw_mean")        # naive mean baseline
     base = _baseline_predictors(results_dir)
 
     deps = ["delta_acc", "delta_ece", "delta_ece_post_ts"]
-    predictors = {"SRC": {r["model"]: cert_src.get(r["model"]) for r in cs}}
-    for key in ["in_domain_acc", "in_domain_ece", "out_of_lung_fraction"]:
-        predictors[key] = {m: base.get(m, {}).get(key) for m in (r["model"] for r in cs)}
-
-    dep_vals = {d: {r["model"]: r.get(d) for r in cs} for d in deps}
     models = [r["model"] for r in cs]
+    predictors = {
+        "SRC_normalized": {r["model"]: cert_src.get(r["model"]) for r in cs},
+        "SRC_raw_mean":   {m: cert_raw.get(m) for m in models},
+        "in_domain_acc":  {m: base.get(m, {}).get("in_domain_acc") for m in models},
+        "in_domain_ece":  {m: base.get(m, {}).get("in_domain_ece") for m in models},
+        "out_of_lung_fraction": {m: base.get(m, {}).get("out_of_lung_fraction") for m in models},
+    }
+    dep_vals = {d: {r["model"]: r.get(d) for r in cs} for d in deps}
+    acc = np.array([base.get(m, {}).get("in_domain_acc") for m in models], float)
 
     out = {"n_models": len(models), "comparison": {}}
     for d in deps:
         out["comparison"][d] = {}
+        y = np.array([dep_vals[d].get(m) for m in models], float)
         for pname, pmap in predictors.items():
             x = np.array([pmap.get(m) for m in models], float)
-            y = np.array([dep_vals[d].get(m) for m in models], float)
             ok = ~(np.isnan(x) | np.isnan(y))
-            if ok.sum() >= 3:
-                out["comparison"][d][pname] = _ols_fit(x[ok], y[ok])
-            else:
-                out["comparison"][d][pname] = {"note": f"<3 valid points ({int(ok.sum())})"}
+            entry = (_ols_fit(x[ok], y[ok]) if ok.sum() >= 3
+                     else {"note": f"<3 valid points ({int(ok.sum())})"})
+            # KEY: independence of accuracy (skip when the predictor IS accuracy)
+            if pname != "in_domain_acc":
+                entry["partial_r_given_acc"] = _partial_r(y, x, acc)
+            out["comparison"][d][pname] = entry
     (results_dir / "src_vs_baselines.json").write_text(json.dumps(out, indent=2))
-    print("[baselines] R^2 head-to-head ->", {d: {p: round(v.get("r2", float("nan")), 3)
-          for p, v in out["comparison"][d].items()} for d in deps})
+    # concise console summary on the headline dependent
+    h = out["comparison"]["delta_ece_post_ts"]
+    print("[baselines] delta_ece_post_ts -> "
+          + ", ".join(f"{p}: R2={v.get('r2', float('nan')):.2f}"
+                      f"(pr|acc={v.get('partial_r_given_acc', float('nan')):+.2f})"
+                      for p, v in h.items()))
     return out
 
 

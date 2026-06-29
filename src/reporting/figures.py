@@ -155,28 +155,29 @@ def table_src(results_dir, out):
 
 
 def table_baselines_lomo(results_dir, out):
-    """Table E — SRC vs baseline predictors (R²) + LOMO out-of-sample R², as LaTeX."""
+    """Table E — the headline reviewer-defense table: each predictor's R² for cross-source
+    miscalibration (delta_ece_post_ts) AND its partial-r controlling for accuracy. Shows the
+    normalized SRC beats every baseline AND adds independent (non-accuracy) signal, while the
+    naive raw-mean SRC and in-domain-ECE do not. LaTeX."""
     rd = Path(results_dir)
     base = _load(rd / "src_vs_baselines.json"); lomo = _load(rd / "lomo.json")
     if not base:
         print("[tableE] no src_vs_baselines.json; skipped"); return False
-    deps = ["delta_acc", "delta_ece", "delta_ece_post_ts"]
-    preds = ["SRC", "in_domain_acc", "in_domain_ece", "out_of_lung_fraction"]
-    lines = [r"\begin{tabular}{l" + "c" * len(deps) + "}", r"\hline",
-             "Predictor & " + " & ".join(d.replace("_", "-") for d in deps) + r" \\", r"\hline"]
+    dep = "delta_ece_post_ts"   # the headline outcome
+    preds = ["SRC_normalized", "SRC_raw_mean", "in_domain_acc", "in_domain_ece", "out_of_lung_fraction"]
+    comp = base.get("comparison", {}).get(dep, {})
+    lines = [r"\begin{tabular}{lcc}", r"\hline",
+             r"Predictor of cross-source $\Delta$ECE (post-TS) & $R^2$ & partial-$r$ $|$ accuracy \\",
+             r"\hline"]
     for p in preds:
-        cells = []
-        for d in deps:
-            v = base["comparison"].get(d, {}).get(p, {})
-            cells.append(f"{v['r2']:.2f}" if "r2" in v else "--")
-        lines.append(f"{p.replace('_','-')} & " + " & ".join(cells) + r" \\")
-    if lomo:
-        lines.append(r"\hline")
-        cells = []
-        for d in deps:
-            v = lomo.get(d, {})
-            cells.append(f"{v['lomo_r2']:.2f}" if isinstance(v, dict) and "lomo_r2" in v else "--")
-        lines.append(r"LOMO (out-of-sample R$^2$) & " + " & ".join(cells) + r" \\")
+        v = comp.get(p, {})
+        r2 = f"{v['r2']:.2f}" if "r2" in v else "--"
+        pr = v.get("partial_r_given_acc")
+        prc = f"{pr:+.2f}" if isinstance(pr, (int, float)) and pr == pr else "--"
+        lines.append(f"{p.replace('_','-')} & {r2} & {prc} \\\\")
+    if lomo and isinstance(lomo.get(dep), dict) and "lomo_r2" in lomo[dep]:
+        lines += [r"\hline",
+                  f"SRC LOMO (out-of-sample $R^2$) & {lomo[dep]['lomo_r2']:.2f} & -- \\\\"]
     lines += [r"\hline", r"\end{tabular}"]
     Path(out).write_text("\n".join(lines)); return True
 
