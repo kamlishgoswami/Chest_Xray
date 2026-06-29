@@ -17,10 +17,12 @@ calibration). That predictive link is called **C3**, and it is the whole paper.
 
 | Notebook | Models | Purpose | When |
 |---|---|---|---|
-| `notebooks/colab_small.ipynb` | 3 (lenet5, densenet201, resnet50) | **Go/No-Go test** — does SRC predict collapse at all? | **Run this FIRST** |
-| `notebooks/colab_full.ipynb` | all 7 | Final results for the paper | Run after a GO (or directly if you want all 7) |
+| `notebooks/colab_smoke.ipynb` | 3 (densenet201, vit, lenet5) | **Bug-check** (3 epochs) — confirm nothing crashes before the expensive run | **Run this FIRST** |
+| `notebooks/colab_full.ipynb` | all 7 | Final results for the paper (100 epochs, real masks) | After the smoke test is all-green |
 
 Both call the **same** code (`scripts/run_pipeline.py`) — only the model list and epochs differ.
+*(The go/no-go is DONE: the 12-epoch run already confirmed the normalized SRC predicts cross-source
+miscalibration. The smoke test now just guards the 100-epoch run against bugs.)*
 
 ---
 

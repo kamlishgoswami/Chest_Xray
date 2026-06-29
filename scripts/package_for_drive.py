@@ -10,7 +10,7 @@ Usage (local Mac):
 
 Then upload data/drive_staging/*.zip + data/manifest.csv to a Drive folder, e.g.
     MyDrive/cxr_data/
-Then open notebooks/colab_small.ipynb (or colab_full.ipynb) in Colab — they restore + run everything.
+Then open notebooks/colab_smoke.ipynb (bug-check) then colab_full.ipynb (real run) in Colab — they restore + run everything.
 """
 from __future__ import annotations
 

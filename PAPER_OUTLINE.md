@@ -383,10 +383,9 @@ established that it does once normalized).
 > exists and is run via the single orchestrator `scripts/run_pipeline.py` (Colab notebooks call the same entry).
 > All real numbers stay **[PLANNED]** until the corresponding Colab run completes.
 
-1. **Run the 3-model go/no-go (`colab_small.ipynb`).** lenet5 + two representative transfer-learning models
-   (densenet201, resnet50/vit); the full pipeline emits SRC, cross-source ΔAcc, ECE, **post-temperature-scaling
-   ECE (§4.6c)**, and the preliminary **C3 regression + baselines (§4.6a)**. Decide the "coupling holds"
-   threshold (R² and CI) **before** looking (§8b, no p-hacking).
+1. **Go/no-go: DONE.** The 7-model 12-epoch run + diagnostic resolved §8b — normalized SRC predicts
+   cross-source post-TS miscalibration (R²=0.54, partial-r|acc=+0.52). Calibration headline locked.
+   Bug-check only now: run `colab_smoke.ipynb` (3 models, 3 epochs) to confirm no crashes before the full run.
 2. **If C3 is promising → full 7-model run (`colab_full.ipynb`).** All artifacts at full epochs; adds
    **LOMO out-of-sample prediction (§4.6b)** to substantiate the word "predicts."
 3. **If the 7-model C3 holds → compute-gated 3-seed extension (§4.6d).** 7 models × 3 seeds = 21 instances;
