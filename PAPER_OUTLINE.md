@@ -131,8 +131,12 @@ they report accuracy/heatmaps → we causally certify reliance; they stop at "it
 
 - **C1 — CSA (method):** standardized, annotation-free, generator-free *interventional* protocol isolating
   each shortcut channel's causal effect. *Delta vs DeGrave: systematic per-channel + automated + inside-lung null.*
-- **C2 — SRC (method, TWIN-A):** auditable per-model certificate + per-channel breakdown + bootstrap CI +
-  **validity gate** (sham must be null). *No read paper does this.*
+- **C2 — SRC (method, TWIN-A):** auditable per-model certificate = **NORMALIZED** shortcut reliance =
+  mean(shortcut-channel effects) **÷ inside-lung effect** + per-channel breakdown + bootstrap CI +
+  **validity gate** (sham must be null; inside-lung ≥ min, which also gates the denominator).
+  *The normalization is THE key methodological move (12-epoch data, §8b): the raw mean is an accuracy
+  proxy (corr≈0.90, partial-r|acc≈0.02 — useless); dividing by inside-lung makes reliance
+  accuracy-independent (partial-r|acc≈+0.52). No read paper does this.*
 - **C3 — Predictive coupling (method, TWIN-A core):** SRC predicts cross-source ΔAcc AND ECE (regression,
   R², CI). *The calibration link is unique among all 12 read papers (incl. DABIS, which predicts accuracy only).*
 - **C4 — Applied benchmark audit (TWIN-B):** run CSA/SRC on 96–99%-style CXR classifiers (cf. B1–B6) on
@@ -352,9 +356,23 @@ P0–P9 core + hardening analyses all implemented ✅ (CSA, SRC, cross_domain/C3
 partial-corr, pathology-preservation, CSA-mask recovery, XAI, robustness, abstention, stats, reporting,
 orchestrator, `--seed`) | Stage-3 local end-to-end test PASSED, every artifact on disk |
 **models: 1/7 trained (lenet5 smoke checkpoint only)**.
-**First real Colab run (3 models, 12 epochs) produced a preliminary C3 signal: SRC→ΔECE R²≈0.77 (strong),
-SRC→ΔAcc R²≈0.02 (flat) — encouraging but n=3 with one degenerate point; NOT conclusive.** The remaining risk
-is purely the **scientific outcome of C3 at the full 7-model run**, not any missing code.
+**DECISION LOG — 7-model 12-epoch run (the §8b gate, RESOLVED):**
+- Raw-mean SRC FAILED the independence test: it was an accuracy proxy (corr(SRC,acc)≈0.90,
+  partial-r|acc≈0.02), and in-domain ECE — a trivial baseline — beat it (R² 0.48 vs 0.37). As written,
+  the headline would have been a desk-reject.
+- FIX (this is the project's pivotal result): **redefine SRC = mean(shortcut effects) ÷ inside-lung
+  effect.** Validated on the 12-epoch data — normalized SRC predicts post-TS ΔECE with **R²=0.54,
+  partial-r|accuracy=+0.52**, beats every baseline (incl. in-domain ECE, whose advantage REVERSES to
+  −0.47 once accuracy is controlled), and survives dropping the two weak models. Table E now auto-reports
+  this head-to-head + partial-r columns. → **GO, calibration-led headline confirmed.**
+- HONEST caveats still open: n=7; LOMO out-of-sample still negative (−0.14) at this n; inside-lung
+  denominator was slightly accuracy-correlated (0.51) due to the OVAL-MASK fallback (real masks should
+  improve it). The 100-epoch + REAL-mask + 3-seed run is to CONFIRM (not test) this, and to make LOMO
+  statistically meaningful (21 points).
+- **Headline framing locked = calibration (per §8b branch i).** Title candidate #1/#3.
+
+**Remaining risk** is now confirmation-at-scale, not whether the idea works (the cheap run + diagnostic
+established that it does once normalized).
 
 ---
 
